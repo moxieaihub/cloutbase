@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.course_ratings_refresh() FROM PUBLIC, anon, authenticated;

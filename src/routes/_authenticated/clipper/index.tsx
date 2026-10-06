@@ -1,7 +1,8 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 
-import { Logo } from "@/components/Logo";
+import { AppHeader } from "@/components/AppHeader";
+import { ClipperSidebar } from "@/components/ClipperSidebar";
 import { EarnUpTo } from "@/components/EarnUpTo";
 import { OfficialBadge } from "@/components/OfficialBadge";
 import { RankBadge } from "@/components/RankBadge";
@@ -37,8 +38,6 @@ export const Route = createFileRoute("/_authenticated/clipper/")({
 
 function ClipperHome() {
   const { user } = Route.useRouteContext();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user.id],
@@ -98,95 +97,83 @@ function ClipperHome() {
     },
   });
 
-  async function signOut() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/login", replace: true });
-  }
-
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 pb-28 pt-10 md:max-w-3xl md:px-8 lg:max-w-6xl lg:px-12 lg:pt-12">
-      <header className="flex items-center justify-between md:border-b md:border-border md:pb-6">
-        <Logo size="sm" />
-        <button
-          onClick={signOut}
-          className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-        >
-          Sign out
-        </button>
-      </header>
+    <div className="min-h-screen">
+      <AppHeader role="clipper" />
 
-      <div className="lg:mt-10 lg:grid lg:grid-cols-[340px_1fr] lg:items-start lg:gap-10">
-        {/* Left: profile, rank, earnings, shortcuts */}
-        <aside className="lg:sticky lg:top-8">
-          <p className="mt-10 text-sm text-muted-foreground lg:mt-0">Clipper account</p>
+      <div className="mx-auto w-full max-w-md px-6 pb-28 pt-8 md:max-w-3xl md:px-8 lg:grid lg:max-w-6xl lg:grid-cols-[220px_1fr] lg:gap-10 lg:px-12 lg:pb-12 lg:pt-10">
+        <ClipperSidebar />
+
+        <main className="min-w-0">
+          <p className="text-sm text-muted-foreground">Clipper account</p>
           <div className="mt-1 flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+            <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight md:text-3xl">
               @{profile?.username ?? "…"}
             </h1>
             {isOfficial ? <OfficialBadge /> : null}
             <RankBadge rank={rank} />
           </div>
 
-          <div className="mt-4 rounded-2xl border border-border p-4">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">
-                {lifetimeViews.toLocaleString("en-NG")} lifetime views
-              </span>
-              <span className="text-muted-foreground">
-                {upcoming ? `Next: ${RANKS[upcoming].label}` : "Top rank"}
-              </span>
+          {/* Rank + earnings */}
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-border p-5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">
+                  {lifetimeViews.toLocaleString("en-NG")} lifetime views
+                </span>
+                <span className="text-muted-foreground">
+                  {upcoming ? `Next: ${RANKS[upcoming].label}` : "Top rank"}
+                </span>
+              </div>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-secondary">
+                <div
+                  className="h-full rounded-full bg-slate"
+                  style={{ width: `${Math.round(progress * 100)}%` }}
+                />
+              </div>
+              <p className="mt-3 text-[11px] text-muted-foreground">{RANKS[rank].perk}</p>
             </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
-              <div
-                className="h-full rounded-full bg-slate"
-                style={{ width: `${Math.round(progress * 100)}%` }}
-              />
+
+            <div className="rounded-2xl border border-border p-5">
+              <p className="text-sm text-muted-foreground">Total earned</p>
+              <p className="mt-1 text-3xl font-semibold tracking-tight text-money">
+                {formatNaira(earnings?.total ?? 0)}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {earnings?.clips ?? 0} clips · {(earnings?.views ?? 0).toLocaleString("en-NG")} views
+              </p>
             </div>
-            <p className="mt-2 text-[11px] text-muted-foreground">{RANKS[rank].perk}</p>
           </div>
           {isOfficial ? (
-            <p className="mt-2 text-xs text-muted-foreground">
+            <p className="mt-3 text-xs text-muted-foreground">
               Early campaign access · up to {official?.max_clips_per_day ?? 10} clips a day · priority
               group
             </p>
           ) : null}
 
+          {/* Shortcuts */}
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <Link
+              to="/university"
+              className="flex items-center justify-between rounded-2xl border border-border p-5 text-sm hover:border-foreground"
+            >
+              <span>
+                Cloutbase University
+                <span className="mt-0.5 block text-xs text-muted-foreground">Learn how to earn</span>
+              </span>
+              <span className="text-xs text-muted-foreground">Browse courses →</span>
+            </Link>
 
-          <div className="mt-6 rounded-2xl border border-border p-5">
-            <p className="text-sm text-muted-foreground">Total earned</p>
-            <p className="mt-1 text-3xl font-semibold tracking-tight text-money">
-              {formatNaira(earnings?.total ?? 0)}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {earnings?.clips ?? 0} clips · {(earnings?.views ?? 0).toLocaleString("en-NG")} views
-            </p>
+            <Link
+              to="/clipper/profile"
+              className="flex items-center justify-between rounded-2xl border border-border p-5 text-sm hover:border-foreground"
+            >
+              <span>Payment details</span>
+              <span className="text-xs text-muted-foreground">Edit any time →</span>
+            </Link>
           </div>
 
-          <Link
-            to="/university"
-            className="mt-4 flex items-center justify-between rounded-2xl border border-border p-5 text-sm hover:border-foreground"
-          >
-            <span>
-              Cloutbase University
-              <span className="mt-0.5 block text-xs text-muted-foreground">Learn how to earn</span>
-            </span>
-            <span className="text-xs text-muted-foreground">Browse courses →</span>
-          </Link>
-
-          <Link
-            to="/clipper/profile"
-            className="mt-4 flex items-center justify-between rounded-2xl border border-border p-5 text-sm hover:border-foreground"
-          >
-            <span>Payment details</span>
-            <span className="text-xs text-muted-foreground">Edit any time →</span>
-          </Link>
-        </aside>
-
-        {/* Right: campaigns */}
-        <section>
-          <h2 className="mt-10 text-sm font-medium uppercase tracking-wide text-muted-foreground lg:mt-0">
+          <h2 className="mt-10 text-sm font-medium uppercase tracking-wide text-muted-foreground">
             Campaigns
           </h2>
 
@@ -269,10 +256,13 @@ function ClipperHome() {
               </p>
             </Link>
           )}
-        </section>
+        </main>
       </div>
 
-      <TabBar role="clipper" />
-    </main>
+      {/* Bottom bar stays on phones and tablets; the sidebar replaces it on desktop */}
+      <div className="lg:hidden">
+        <TabBar role="clipper" />
+      </div>
+    </div>
   );
 }

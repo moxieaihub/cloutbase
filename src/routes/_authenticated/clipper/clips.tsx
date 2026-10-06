@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
-import { Logo } from "@/components/Logo";
+import { AppHeader } from "@/components/AppHeader";
+import { ClipperSidebar } from "@/components/ClipperSidebar";
 import { PaidBadge } from "@/components/PaidBadge";
 import { TabBar } from "@/components/TabBar";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,45 +62,43 @@ function MyClips() {
   );
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 pb-28 pt-10 md:max-w-3xl md:px-8 lg:max-w-6xl lg:px-12 lg:pt-12">
-      <header className="flex items-center justify-between md:border-b md:border-border md:pb-6">
-        <Logo size="sm" />
-        <Link
-          to="/clipper"
-          className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-        >
-          Campaigns
-        </Link>
-      </header>
+    <div className="min-h-screen">
+      <AppHeader role="clipper" />
 
-      <div className="lg:mt-10 lg:grid lg:grid-cols-[320px_1fr] lg:items-start lg:gap-10">
-        {/* Left: summary */}
-        <aside className="lg:sticky lg:top-8">
-          <h1 className="mt-10 text-2xl font-semibold tracking-tight md:text-3xl lg:mt-0">
-            My clips
-          </h1>
+      <div className="mx-auto w-full max-w-md px-6 pb-28 pt-8 md:max-w-3xl md:px-8 lg:grid lg:max-w-6xl lg:grid-cols-[220px_1fr] lg:gap-10 lg:px-12 lg:pb-12 lg:pt-10">
+        <ClipperSidebar />
+
+        <main>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">My clips</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {(clips?.length ?? 0).toLocaleString("en-NG")} clips ·{" "}
-            {totals.views.toLocaleString("en-NG")} views
+            Track views, snapshot status and earnings for each clip you posted.
           </p>
 
-          <div className="mt-5 rounded-2xl border border-border p-5">
-            <p className="text-sm text-muted-foreground">Earned so far</p>
-            <p className="mt-1 text-3xl font-semibold tracking-tight text-money">
-              {formatNaira(totals.earnings)}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Clips must stay live 5 days before views are counted.
-            </p>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-border p-5">
+              <p className="text-sm text-muted-foreground">Earned so far</p>
+              <p className="mt-1 text-3xl font-semibold tracking-tight text-money">
+                {formatNaira(totals.earnings)}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Clips must stay live 5 days before views are counted.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border p-5">
+              <p className="text-sm text-muted-foreground">Clips posted</p>
+              <p className="mt-1 text-3xl font-semibold tracking-tight">
+                {(clips?.length ?? 0).toLocaleString("en-NG")}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {totals.views.toLocaleString("en-NG")} views in total
+              </p>
+            </div>
           </div>
-        </aside>
 
-        {/* Right: clip list */}
-        <section className="lg:mt-0">
           {isLoading ? (
-            <p className="mt-6 text-sm text-muted-foreground lg:mt-0">Loading your clips…</p>
+            <p className="mt-8 text-sm text-muted-foreground">Loading your clips…</p>
           ) : clips && clips.length > 0 ? (
-            <ul className="mt-6 grid gap-3 md:grid-cols-2 md:gap-4 lg:mt-0 lg:grid-cols-1">
+            <ul className="mt-8 grid gap-3 md:grid-cols-2 md:gap-4">
               {clips.map((c) => {
                 const snapshotDue = c.counts_from ? new Date(c.counts_from) : null;
                 const counted = snapshotDue ? snapshotDue.getTime() <= Date.now() : false;
@@ -146,14 +145,17 @@ function MyClips() {
               })}
             </ul>
           ) : (
-            <div className="mt-6 rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground lg:mt-0">
+            <div className="mt-8 rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
               No clips yet. Join a campaign and post your first clip.
             </div>
           )}
-        </section>
+        </main>
       </div>
 
-      <TabBar role="clipper" />
-    </main>
+      {/* Bottom bar stays on phones and tablets; the sidebar replaces it on desktop */}
+      <div className="lg:hidden">
+        <TabBar role="clipper" />
+      </div>
+    </div>
   );
 }

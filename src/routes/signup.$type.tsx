@@ -104,13 +104,13 @@ function SignupPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col justify-center px-5 py-12">
+    <main className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col justify-center px-5 py-12 md:max-w-[480px] lg:max-w-5xl lg:px-12">
       {sent ? (
-        <div className="flex flex-col">
-          <h1 className="font-display text-[23px] font-semibold tracking-[-0.02em]">
+        <div className="flex flex-col lg:mx-auto lg:w-full lg:max-w-md">
+          <h1 className="font-display text-[23px] font-semibold tracking-[-0.02em] md:text-[28px]">
             Check your email
           </h1>
-          <p className="mt-3 text-[13.5px] leading-[1.5] text-muted-foreground">
+          <p className="mt-3 text-[13.5px] leading-[1.5] text-muted-foreground md:text-[15px]">
             We sent a confirmation link to <span className="text-foreground">{email}</span>. Confirm
             it to activate your Cloutbase account.
           </p>
@@ -122,91 +122,103 @@ function SignupPage() {
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col">
-          <div className="mb-[34px] flex flex-col items-center gap-3.5">
+        <div className="flex flex-col lg:grid lg:grid-cols-2 lg:items-center lg:gap-20">
+          {/* Brand / heading */}
+          <div className="mb-[34px] flex flex-col items-center gap-3.5 lg:mb-0 lg:items-start lg:gap-6">
             <Link to="/">
               <Logo size="lg" />
             </Link>
-            <p className="text-[13px] text-muted-foreground">{config.heading}</p>
+            <p className="text-[13px] text-muted-foreground lg:hidden">{config.heading}</p>
+            <div className="hidden lg:block">
+              <h1 className="font-display text-5xl font-semibold leading-[1.05] tracking-[-0.035em]">
+                {config.heading}
+              </h1>
+              <p className="mt-4 max-w-sm text-lg leading-[1.5] text-muted-foreground">
+                {config.blurb}
+              </p>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col">
-            <Field
-              label={type === "business" ? "Choose a username" : "Choose a username"}
-              value={username}
-              onChange={setUsername}
-              placeholder="pick any name — no real name needed"
-              autoComplete="username"
-              required
-            />
-            <Field
-              label="Email"
-              type="email"
-              value={email}
-              onChange={setEmail}
-              placeholder="you@email.com"
-              autoComplete="email"
-              required
-            />
-            <Field
-              label="Password"
-              type="password"
-              value={password}
-              onChange={setPassword}
-              placeholder="create a password"
-              autoComplete="new-password"
-              minLength={6}
-              required
-            />
+          {/* Form */}
+          <div className="flex flex-col lg:rounded-[24px] lg:border lg:border-border/60 lg:p-8">
+            <form onSubmit={handleSubmit} className="flex flex-col">
+              <Field
+                label={type === "business" ? "Choose a username" : "Choose a username"}
+                value={username}
+                onChange={setUsername}
+                placeholder="pick any name — no real name needed"
+                autoComplete="username"
+                required
+              />
+              <Field
+                label="Email"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                placeholder="you@email.com"
+                autoComplete="email"
+                required
+              />
+              <Field
+                label="Password"
+                type="password"
+                value={password}
+                onChange={setPassword}
+                placeholder="create a password"
+                autoComplete="new-password"
+                minLength={6}
+                required
+              />
 
-            <TermsBox
-              title={type === "business" ? "Brand terms" : "Clipper rules"}
-              points={type === "business" ? BUSINESS_TERMS : CLIPPER_TERMS}
-              checked={accepted}
-              onChange={setAccepted}
-              label="I have read and accept these terms."
-            />
+              <TermsBox
+                title={type === "business" ? "Brand terms" : "Clipper rules"}
+                points={type === "business" ? BUSINESS_TERMS : CLIPPER_TERMS}
+                checked={accepted}
+                onChange={setAccepted}
+                label="I have read and accept these terms."
+              />
 
-            {error ? (
-              <p className="mt-2 text-[13px] text-destructive" role="alert">
-                {error}
-              </p>
-            ) : null}
+              {error ? (
+                <p className="mt-2 text-[13px] text-destructive" role="alert">
+                  {error}
+                </p>
+              ) : null}
 
-            <button
-              type="submit"
-              disabled={loading || !accepted}
-              className="mt-4 w-full rounded-[15px] bg-foreground p-[15px] font-display text-[15px] font-semibold tracking-[-0.01em] text-background transition-all hover:-translate-y-px hover:opacity-90 disabled:opacity-50"
-            >
-              {loading ? "Creating account…" : "Create account"}
-            </button>
-          </form>
-
-          <p className="mt-4 text-center text-[13px] text-muted-foreground">
-            Already have an account?{" "}
-            <Link to="/login" className="font-semibold text-foreground">
-              Log in
-            </Link>
-          </p>
-          <p className="mt-3 text-center text-[12px] text-muted-2">
-            {type === "business" ? (
-              <Link
-                to="/signup/$type"
-                params={{ type: "clipper" }}
-                className="underline underline-offset-4"
+              <button
+                type="submit"
+                disabled={loading || !accepted}
+                className="mt-4 w-full rounded-[15px] bg-foreground p-[15px] font-display text-[15px] font-semibold tracking-[-0.01em] text-background transition-all hover:-translate-y-px hover:opacity-90 disabled:opacity-50"
               >
-                Become a clipper for Cloutbase
+                {loading ? "Creating account…" : "Create account"}
+              </button>
+            </form>
+
+            <p className="mt-4 text-center text-[13px] text-muted-foreground">
+              Already have an account?{" "}
+              <Link to="/login" className="font-semibold text-foreground">
+                Log in
               </Link>
-            ) : (
-              <Link
-                to="/signup/$type"
-                params={{ type: "business" }}
-                className="underline underline-offset-4"
-              >
-                I want my video clipped instead
-              </Link>
-            )}
-          </p>
+            </p>
+            <p className="mt-3 text-center text-[12px] text-muted-2">
+              {type === "business" ? (
+                <Link
+                  to="/signup/$type"
+                  params={{ type: "clipper" }}
+                  className="underline underline-offset-4"
+                >
+                  Become a clipper for Cloutbase
+                </Link>
+              ) : (
+                <Link
+                  to="/signup/$type"
+                  params={{ type: "business" }}
+                  className="underline underline-offset-4"
+                >
+                  I want my video clipped instead
+                </Link>
+              )}
+            </p>
+          </div>
         </div>
       )}
     </main>

@@ -1,11 +1,12 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { supabase } from "@/integrations/supabase/client";
+import { homePathFor } from "@/lib/home";
 
 /**
  * Business area guard. Only business accounts (and admins, for support) may
- * enter; clippers are sent back to their own dashboard. Data itself is still
- * owner-scoped in the database — this is the navigational layer.
+ * enter; clippers and students are sent to their own home. Data itself is
+ * still owner-scoped in the database — this is the navigational layer.
  */
 export const Route = createFileRoute("/_authenticated/business")({
   beforeLoad: async ({ context }) => {
@@ -16,8 +17,9 @@ export const Route = createFileRoute("/_authenticated/business")({
     const isAdmin = (roles ?? []).some(
       (r) => r.role === "admin" || r.role === "super_admin",
     );
-    if (!isAdmin && profile?.account_type !== "business") {
-      throw redirect({ to: "/clipper" });
+    const type = profile?.account_type ?? "clipper";
+    if (!isAdmin && type !== "business") {
+      throw redirect({ to: homePathFor(type) });
     }
   },
   component: () => <Outlet />,

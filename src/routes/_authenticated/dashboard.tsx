@@ -59,14 +59,15 @@ function Dashboard() {
   }
 
   const isBusiness = profile?.account_type === "business";
-
   const isClipper = profile?.account_type === "clipper";
+  const isStudent = profile?.account_type === "student";
 
   useEffect(() => {
     if (isAdmin) return;
     if (isBusiness) navigate({ to: "/business", replace: true });
+    else if (isStudent) navigate({ to: "/university/dashboard", replace: true });
     else if (isClipper) navigate({ to: "/clipper", replace: true });
-  }, [isAdmin, isBusiness, isClipper, navigate]);
+  }, [isAdmin, isBusiness, isClipper, isStudent, navigate]);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
@@ -82,7 +83,7 @@ function Dashboard() {
 
       <div className="mt-10">
         <p className="text-sm text-muted-foreground">
-          {isBusiness ? "Business account" : "Clipper account"}
+          {isBusiness ? "Business account" : isStudent ? "Student account" : "Clipper account"}
         </p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">
           @{profile?.username ?? "…"}

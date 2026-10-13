@@ -17,6 +17,7 @@ export type PosterCourse = {
 export function CoursePoster({ course, owned }: { course: PosterCourse; owned: boolean }) {
   const badge = course.badge !== "none" ? BADGE_LABELS[course.badge] : null;
   return (
+    // Owners are redirected from the detail page straight into the classroom.
     <Link
       to="/university/$courseId"
       params={{ courseId: course.id }}
@@ -39,7 +40,7 @@ export function CoursePoster({ course, owned }: { course: PosterCourse; owned: b
         )}
 
         {badge ? (
-          <span className="absolute left-0 top-3 rounded-r-full bg-gold-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-gold ring-1 ring-inset ring-gold/40">
+          <span className="absolute left-0 top-3 rounded-r-full bg-[#4DA3FF]/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#4DA3FF] ring-1 ring-inset ring-[#4DA3FF]/40 backdrop-blur">
             {badge}
           </span>
         ) : null}
@@ -47,7 +48,7 @@ export function CoursePoster({ course, owned }: { course: PosterCourse; owned: b
         <span
           className={`absolute bottom-2 right-2 rounded-full px-2 py-1 text-[11px] font-semibold ${
             owned
-              ? "bg-money-soft text-money ring-1 ring-inset ring-money/40"
+              ? "bg-[#4DA3FF]/15 text-[#4DA3FF] ring-1 ring-inset ring-[#4DA3FF]/40"
               : "bg-background/85 text-price ring-1 ring-inset ring-price/40"
           }`}
         >
@@ -62,7 +63,7 @@ export function CoursePoster({ course, owned }: { course: PosterCourse; owned: b
             {course.outcome_tag}
           </p>
         ) : null}
-        <p className="mt-1.5 text-[11px] text-gold">
+        <p className="mt-1.5 text-[11px] text-[#4DA3FF]">
           <span aria-hidden="true">{starRow(course.avg_rating)}</span>{" "}
           <span className="text-muted-2">
             {course.rating_count > 0 ? course.rating_count : "new"}

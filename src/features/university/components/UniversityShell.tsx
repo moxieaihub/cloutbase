@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
 
-import { Logo } from "@/components/Logo";
+import { UniversityTopBar } from "@/features/university/components/UniversityTopBar";
 
 const TABS = [
+  { to: "/university/dashboard", label: "Dashboard", exact: true },
   { to: "/university", label: "Catalog", exact: true },
   { to: "/university/my-courses", label: "My courses", exact: false },
 ] as const;
@@ -16,12 +17,7 @@ export function UniversityShell({
 }) {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 pb-28 pt-10 lg:px-10">
-      <header className="flex items-center justify-between">
-        <Logo size="sm" />
-        <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-          Back
-        </Link>
-      </header>
+      <UniversityTopBar />
 
       {hideTabs ? null : (
         <nav className="mt-6 flex gap-6 border-b border-border text-sm">

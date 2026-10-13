@@ -4,7 +4,13 @@ import { useState } from "react";
 import { Logo } from "@/components/Logo";
 import { TermsBox } from "@/components/TermsBox";
 import { supabase } from "@/integrations/supabase/client";
-import { BUSINESS_TERMS, CLIPPER_TERMS, TERMS_VERSION, deviceSignal } from "@/lib/terms";
+import {
+  BUSINESS_TERMS,
+  CLIPPER_TERMS,
+  STUDENT_TERMS,
+  TERMS_VERSION,
+  deviceSignal,
+} from "@/lib/terms";
 
 const TYPES = {
   business: {
@@ -16,6 +22,11 @@ const TYPES = {
     label: "Clipper",
     heading: "Create your clipper account",
     blurb: "Clip campaigns, rack up views and get paid in ₦.",
+  },
+  student: {
+    label: "Student",
+    heading: "Create your University account",
+    blurb: "Learn how to earn with practical, Naira-priced courses.",
   },
 } as const;
 
@@ -37,12 +48,15 @@ export const Route = createFileRoute("/signup/$type")({
     if (!(params.type in TYPES)) throw notFound();
   },
   head: ({ params }) => {
-    const label = params.type === "business" ? "business" : "clipper";
+    const label =
+      params.type === "business" ? "business" : params.type === "student" ? "student" : "clipper";
     const title = `Sign up as a ${label} — Cloutbase`;
     const description =
       label === "business"
         ? "Create a Cloutbase business account and get your videos clipped by Nigerian creators."
-        : "Create a Cloutbase clipper account and start earning in Naira from clips.";
+        : label === "student"
+          ? "Create a Cloutbase University account and learn how to earn with practical courses."
+          : "Create a Cloutbase clipper account and start earning in Naira from clips.";
     return {
       meta: [
         { title },
@@ -100,7 +114,12 @@ function SignupPage() {
     if (data.user) {
       await supabase.from("terms_acceptances").insert({
         user_id: data.user.id,
-        kind: type === "business" ? "business_signup" : "clipper_signup",
+        kind:
+          type === "business"
+            ? "business_signup"
+            : type === "student"
+              ? "student_signup"
+              : "clipper_signup",
         version: TERMS_VERSION,
         user_agent: navigator.userAgent,
       });
@@ -161,7 +180,7 @@ function SignupPage() {
           <div className="flex flex-col lg:rounded-[24px] lg:border lg:border-border/60 lg:p-8">
             <form onSubmit={handleSubmit} className="flex flex-col">
               <Field
-                label={type === "business" ? "Choose a username" : "Choose a username"}
+                label="Choose a username"
                 value={username}
                 onChange={setUsername}
                 placeholder="pick any name — no real name needed"
@@ -189,8 +208,20 @@ function SignupPage() {
               />
 
               <TermsBox
-                title={type === "business" ? "Brand terms" : "Clipper rules"}
-                points={type === "business" ? BUSINESS_TERMS : CLIPPER_TERMS}
+                title={
+                  type === "business"
+                    ? "Brand terms"
+                    : type === "student"
+                      ? "Student terms"
+                      : "Clipper rules"
+                }
+                points={
+                  type === "business"
+                    ? BUSINESS_TERMS
+                    : type === "student"
+                      ? STUDENT_TERMS
+                      : CLIPPER_TERMS
+                }
                 checked={accepted}
                 onChange={setAccepted}
                 label="I have read and accept these terms."
@@ -226,6 +257,15 @@ function SignupPage() {
                   className="underline underline-offset-4"
                 >
                   Become a clipper for Cloutbase
+                </Link>
+              ) : type === "student" ? (
+                <Link
+                  to="/signup/$type"
+                  params={{ type: "clipper" }}
+                  search={{ redirect }}
+                  className="underline underline-offset-4"
+                >
+                  Want to earn by clipping? Sign up as a clipper
                 </Link>
               ) : (
                 <Link

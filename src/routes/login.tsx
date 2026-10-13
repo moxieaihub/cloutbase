@@ -179,6 +179,7 @@ function LoginPage() {
           <Link
             to="/signup/$type"
             params={{ type: "clipper" }}
+            search={{ redirect }}
             className="font-semibold text-foreground"
           >
             Create an account

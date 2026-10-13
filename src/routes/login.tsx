@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
@@ -9,7 +9,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { startDemoSession } from "@/lib/demo.functions";
 
 
+// Only follow same-site paths ("/university"), never "//evil.com" or full URLs.
+function safeRedirect(value: unknown): string | undefined {
+  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
+    ? value
+    : undefined;
+}
+
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+    redirect: safeRedirect(search.redirect),
+  }),
   head: () => ({
     meta: [
       { title: "Log in — Cloutbase" },
@@ -31,6 +41,8 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const router = useRouter();
+  const { redirect } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,6 +57,10 @@ function LoginPage() {
       const creds = await beginDemo({ data: { role } });
       const { error: signInError } = await supabase.auth.signInWithPassword(creds);
       if (signInError) throw new Error(signInError.message);
+      if (redirect) {
+        router.history.push(redirect);
+        return;
+      }
       navigate({ to: role === "admin" ? "/admin" : role === "business" ? "/business" : "/clipper" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not start the demo session.");
@@ -67,6 +83,10 @@ function LoginPage() {
     setLoading(false);
     if (signInError) {
       setError(signInError.message);
+      return;
+    }
+    if (redirect) {
+      router.history.push(redirect);
       return;
     }
     navigate({ to: "/dashboard" });

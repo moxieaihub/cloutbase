@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { Logo } from "@/components/Logo";
@@ -21,7 +21,18 @@ const TYPES = {
 
 type AccountType = keyof typeof TYPES;
 
+// Only follow same-site paths ("/university"), never "//evil.com" or full URLs.
+function safeRedirect(value: unknown): string | undefined {
+  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
+    ? value
+    : undefined;
+}
+
 export const Route = createFileRoute("/signup/$type")({
+  validateSearch: (search: Record<string, unknown>): { redirect?: string; ref?: string } => ({
+    redirect: safeRedirect(search.redirect),
+    ref: typeof search.ref === "string" ? search.ref : undefined,
+  }),
   beforeLoad: ({ params }) => {
     if (!(params.type in TYPES)) throw notFound();
   },
@@ -50,6 +61,8 @@ function SignupPage() {
   const { type } = Route.useParams();
   const config = TYPES[type as AccountType];
   const navigate = useNavigate();
+  const router = useRouter();
+  const { redirect } = Route.useSearch();
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -72,7 +85,7 @@ function SignupPage() {
       email: email.trim(),
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: `${window.location.origin}${redirect ?? "/dashboard"}`,
         data: { username: username.trim(), account_type: type, device_signal: deviceSignal() },
       },
     });
@@ -96,6 +109,10 @@ function SignupPage() {
     }
 
     if (data.session) {
+      if (redirect) {
+        router.history.push(redirect);
+        return;
+      }
       navigate({ to: "/dashboard" });
       return;
     }
@@ -116,6 +133,7 @@ function SignupPage() {
           </p>
           <Link
             to="/login"
+            search={{ redirect }}
             className="mt-8 inline-flex items-center justify-center rounded-[15px] border border-input bg-card p-[15px] font-display text-[15px] font-semibold"
           >
             Go to log in
@@ -195,7 +213,7 @@ function SignupPage() {
 
             <p className="mt-4 text-center text-[13px] text-muted-foreground">
               Already have an account?{" "}
-              <Link to="/login" className="font-semibold text-foreground">
+              <Link to="/login" search={{ redirect }} className="font-semibold text-foreground">
                 Log in
               </Link>
             </p>
@@ -204,6 +222,7 @@ function SignupPage() {
                 <Link
                   to="/signup/$type"
                   params={{ type: "clipper" }}
+                  search={{ redirect }}
                   className="underline underline-offset-4"
                 >
                   Become a clipper for Cloutbase
@@ -212,6 +231,7 @@ function SignupPage() {
                 <Link
                   to="/signup/$type"
                   params={{ type: "business" }}
+                  search={{ redirect }}
                   className="underline underline-offset-4"
                 >
                   I want my video clipped instead

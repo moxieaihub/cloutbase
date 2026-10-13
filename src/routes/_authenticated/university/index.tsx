@@ -1,9 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 
 import { Logo } from "@/components/Logo";
-import { CoursePoster, type PosterCourse } from "@/components/CoursePoster";
-import { supabase } from "@/integrations/supabase/client";
+import { CoursePoster } from "@/components/CoursePoster";
+import { useOwnedCourseIds, usePublishedCourses } from "@/features/university/queries";
 
 export const Route = createFileRoute("/_authenticated/university/")({
   head: () => ({
@@ -23,22 +22,23 @@ export const Route = createFileRoute("/_authenticated/university/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: University,
+  component: Catalog,
   errorComponent: () => (
     <Shell>
-      <p className="text-sm text-muted-foreground">Something went wrong loading the courses.</p>
+      <p className="mt-8 text-sm text-muted-foreground">Something went wrong loading the courses.</p>
     </Shell>
   ),
   notFoundComponent: () => (
     <Shell>
-      <p className="text-sm text-muted-foreground">Not found.</p>
+      <p className="mt-8 text-sm text-muted-foreground">Not found.</p>
     </Shell>
   ),
 });
 
+// Page container: phone-width on mobile, widens progressively on larger screens.
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-28 pt-10">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-28 pt-10 sm:max-w-2xl sm:px-8 lg:max-w-5xl lg:px-10 xl:max-w-6xl">
       <header className="flex items-center justify-between">
         <Logo size="sm" />
         <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
@@ -50,49 +50,45 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function University() {
+// Course grid: 2 cols on phones, 3 on tablets, 4 on laptops, 5 on wide desktops.
+function CourseGrid({
+  courses,
+  owned,
+}: {
+  courses: React.ComponentProps<typeof CoursePoster>["course"][];
+  owned?: Set<string>;
+}) {
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5">
+      {courses.map((c) => (
+        <CoursePoster key={c.id} course={c} owned={owned?.has(c.id) ?? false} />
+      ))}
+    </div>
+  );
+}
+
+function Catalog() {
   const { user } = Route.useRouteContext();
+  const { data: courses, isLoading } = usePublishedCourses();
+  const { data: owned } = useOwnedCourseIds(user.id);
 
-  const { data: courses, isLoading } = useQuery({
-    queryKey: ["university-courses"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("courses")
-        .select(
-          "id, title, subtitle, price, thumbnail_url, outcome_tag, badge, avg_rating, rating_count, sort_order",
-        )
-        .eq("is_published", true)
-        .order("sort_order")
-        .order("created_at");
-      if (error) throw error;
-      return (data ?? []) as (PosterCourse & { subtitle: string | null })[];
-    },
-  });
-
-  const { data: owned } = useQuery({
-    queryKey: ["university-owned", user.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("course_purchases")
-        .select("course_id")
-        .eq("user_id", user.id);
-      if (error) throw error;
-      return new Set((data ?? []).map((r) => r.course_id));
-    },
-  });
-
-  const myCourses = (courses ?? []).filter((c) => owned?.has(c.id));
-  const rest = (courses ?? []).filter((c) => !owned?.has(c.id));
+  const all = courses ?? [];
+  const rows = [
+    { title: "🔥 Hot right now", items: all.filter((c) => c.badge === "hot") },
+    { title: "Most popular", items: all.filter((c) => c.badge === "popular") },
+    { title: "Recommended", items: all.filter((c) => c.badge === "recommended") },
+  ].filter((r) => r.items.length > 0);
 
   return (
     <Shell>
       <div className="mt-8">
         <p className="text-[11px] uppercase tracking-[0.18em] text-muted-2">Cloutbase University</p>
-        <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight">
+        <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
           Learn how to earn
         </h1>
-        <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-          Practical courses from people already doing it. Buy once, watch forever — no subscription.
+        <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-muted-foreground sm:text-sm">
+          Practical courses from people already doing it. Buy once, watch forever — no
+          subscription.
         </p>
       </div>
 
@@ -100,29 +96,21 @@ function University() {
         <p className="mt-8 text-sm text-muted-foreground">Loading courses…</p>
       ) : (
         <>
-          {myCourses.length > 0 ? (
-            <section className="mt-8">
+          {rows.map((row) => (
+            <section key={row.title} className="mt-8">
               <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                Continue learning
+                {row.title}
               </h2>
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                {myCourses.map((c) => (
-                  <CoursePoster key={c.id} course={c} owned />
-                ))}
-              </div>
+              <CourseGrid courses={row.items} owned={owned} />
             </section>
-          ) : null}
+          ))}
 
           <section className="mt-8">
             <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-              {myCourses.length > 0 ? "More courses" : "All courses"}
+              All courses
             </h2>
-            {rest.length > 0 ? (
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                {rest.map((c) => (
-                  <CoursePoster key={c.id} course={c} owned={false} />
-                ))}
-              </div>
+            {all.length > 0 ? (
+              <CourseGrid courses={all} owned={owned} />
             ) : (
               <p className="mt-3 rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
                 New courses are on the way.

@@ -1,10 +1,11 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { supabase } from "@/integrations/supabase/client";
+import { homePathFor } from "@/lib/home";
 
 /**
  * Clipper area guard. Only clipper accounts (and admins, for support) may
- * enter; business accounts are sent back to their own dashboard.
+ * enter; business and student accounts are sent to their own home.
  */
 export const Route = createFileRoute("/_authenticated/clipper")({
   beforeLoad: async ({ context }) => {
@@ -15,8 +16,9 @@ export const Route = createFileRoute("/_authenticated/clipper")({
     const isAdmin = (roles ?? []).some(
       (r) => r.role === "admin" || r.role === "super_admin",
     );
-    if (!isAdmin && profile?.account_type !== "clipper") {
-      throw redirect({ to: "/business" });
+    const type = profile?.account_type ?? "clipper";
+    if (!isAdmin && type !== "clipper") {
+      throw redirect({ to: homePathFor(type) });
     }
   },
   component: () => <Outlet />,

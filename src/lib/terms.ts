@@ -23,6 +23,11 @@ export const BUSINESS_TERMS = [
   "I hold the rights to the video I upload and to the assets clippers are asked to use.",
 ] as const;
 
+export const STUDENT_TERMS = [
+  "I am 18 years or older.",
+  "Course content is for my personal learning only. I will not share, resell or re-upload it.",
+  "Purchases are for my account only and I will not share my login.",
+] as const;
 /**
  * A coarse, non-PII device signal used only to flag banned users trying to
  * re-register. It is not a tracking identifier and holds no personal data.

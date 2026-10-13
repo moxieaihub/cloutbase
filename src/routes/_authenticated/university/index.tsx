@@ -1,6 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+// import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { Logo } from "@/components/Logo";
+// import { Logo } from "@/components/Logo";
+import { createFileRoute } from "@tanstack/react-router";
+
+import { CoursePoster } from "@/components/CoursePoster";
+import { UniversityShell } from "@/features/university/components/UniversityShell";
+import { useOwnedCourseIds, usePublishedCourses } from "@/features/university/queries";
 import { CoursePoster } from "@/components/CoursePoster";
 import { useOwnedCourseIds, usePublishedCourses } from "@/features/university/queries";
 

@@ -6,8 +6,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CoursePoster } from "@/components/CoursePoster";
 import { UniversityShell } from "@/features/university/components/UniversityShell";
 import { useOwnedCourseIds, usePublishedCourses } from "@/features/university/queries";
-import { CoursePoster } from "@/components/CoursePoster";
-import { useOwnedCourseIds, usePublishedCourses } from "@/features/university/queries";
+// import { CoursePoster } from "@/components/CoursePoster";
+// import { useOwnedCourseIds, usePublishedCourses } from "@/features/university/queries";
 
 export const Route = createFileRoute("/_authenticated/university/")({
   head: () => ({

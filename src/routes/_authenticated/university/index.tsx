@@ -41,18 +41,21 @@ export const Route = createFileRoute("/_authenticated/university/")({
 });
 
 // Page container: phone-width on mobile, widens progressively on larger screens.
+// function Shell({ children }: { children: React.ReactNode }) {
+//   return (
+//     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-28 pt-10 sm:max-w-2xl sm:px-8 lg:max-w-5xl lg:px-10 xl:max-w-6xl">
+//       <header className="flex items-center justify-between">
+//         <Logo size="sm" />
+//         <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
+//           Back
+//         </Link>
+//       </header>
+//       {children}
+//     </main>
+//   );
+// }
 function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-28 pt-10 sm:max-w-2xl sm:px-8 lg:max-w-5xl lg:px-10 xl:max-w-6xl">
-      <header className="flex items-center justify-between">
-        <Logo size="sm" />
-        <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-          Back
-        </Link>
-      </header>
-      {children}
-    </main>
-  );
+  return <UniversityShell>{children}</UniversityShell>;
 }
 
 // Course grid: 2 cols on phones, 3 on tablets, 4 on laptops, 5 on wide desktops.

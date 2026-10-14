@@ -18,7 +18,7 @@ export function useCourseCheckout(courseId: string, userId: string) {
     queryClient.invalidateQueries({ queryKey: uniKeys.owned(userId) });
   }, [queryClient, courseId, userId]);
 
-  /** Called when Paystack sends the buyer back with ?ref= */
+  /** Called when Paystack sends the buyer back with ?reference= */
   const confirm = useCallback(
     async (reference: string) => {
       await confirmPurchase({ data: { courseId, reference } });
@@ -33,6 +33,7 @@ export function useCourseCheckout(courseId: string, userId: string) {
     try {
       const callbackUrl = `${window.location.origin}/university/${courseId}`;
       const started = await initPayment({ data: { courseId, callbackUrl } });
+
       if (started.mode === "owned") {
         refreshOwnership();
         return;
@@ -41,8 +42,13 @@ export function useCourseCheckout(courseId: string, userId: string) {
         window.location.href = started.authorizationUrl;
         return;
       }
-      // Manual / placeholder provider: confirm straight away.
-      await confirm(started.reference!);
+      // Only free (₦0) courses skip the gateway. Anything else that isn't
+      // Paystack is an error — never unlock without a verified payment.
+      if (started.mode === "free" && started.reference) {
+        await confirm(started.reference);
+        return;
+      }
+      throw new Error("Could not start checkout. Please try again.");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {

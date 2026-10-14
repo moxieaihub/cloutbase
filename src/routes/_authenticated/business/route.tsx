@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { supabase } from "@/integrations/supabase/client";
-import { homePathFor } from "@/lib/home";
+import { homePathFor, resolveAccountType } from "@/lib/home";
 
 /**
  * Business area guard. Only business accounts (and admins, for support) may
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/business")({
     const isAdmin = (roles ?? []).some(
       (r) => r.role === "admin" || r.role === "super_admin",
     );
-    const type = profile?.account_type ?? "clipper";
+    const type = resolveAccountType(profile?.account_type, context.user) ?? "clipper";
     if (!isAdmin && type !== "business") {
       throw redirect({ to: homePathFor(type) });
     }

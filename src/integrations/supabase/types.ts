@@ -119,12 +119,14 @@ export type Database = {
           early_access_hours: number
           ends_at: string | null
           funded: boolean
+          guaranteed_views: number | null // ADDED
           hashtags: string | null
           id: string
           is_inhouse: boolean
           kpi_target: string | null
           live_at: string | null
           min_followers: number
+          package_id: string | null // ADDED
           per_clipper_ceiling: number
           rate_per_1000_views: number
           reject_reason: string | null
@@ -153,12 +155,14 @@ export type Database = {
           early_access_hours?: number
           ends_at?: string | null
           funded?: boolean
+          guaranteed_views?: number | null // ADDED
           hashtags?: string | null
           id?: string
           is_inhouse?: boolean
           kpi_target?: string | null
           live_at?: string | null
           min_followers?: number
+          package_id?: string | null // ADDED
           per_clipper_ceiling?: number
           rate_per_1000_views?: number
           reject_reason?: string | null
@@ -187,12 +191,14 @@ export type Database = {
           early_access_hours?: number
           ends_at?: string | null
           funded?: boolean
+          guaranteed_views?: number | null // ADDED
           hashtags?: string | null
           id?: string
           is_inhouse?: boolean
           kpi_target?: string | null
           live_at?: string | null
           min_followers?: number
+          package_id?: string | null // ADDED
           per_clipper_ceiling?: number
           rate_per_1000_views?: number
           reject_reason?: string | null
@@ -959,6 +965,47 @@ export type Database = {
         }
         Relationships: []
       }
+      slot_applications: { // ADDED (whole table)
+        Row: {
+          applied_at: string
+          campaign_id: string
+          clipper_user_id: string
+          decided_at: string | null
+          decided_by: string | null
+          decline_reason: string | null
+          id: string
+          status: string
+        }
+        Insert: {
+          applied_at?: string
+          campaign_id: string
+          clipper_user_id: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decline_reason?: string | null
+          id?: string
+          status?: string
+        }
+        Update: {
+          applied_at?: string
+          campaign_id?: string
+          clipper_user_id?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decline_reason?: string | null
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slot_applications_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       strike_log: {
         Row: {
           admin_id: string | null
@@ -1133,6 +1180,39 @@ export type Database = {
       }
     }
     Functions: {
+      admin_accept_application: { // ADDED
+        Args: { _application_id: string }
+        Returns: undefined
+      }
+      admin_decline_application: { // ADDED
+        Args: { _application_id: string; _reason: string }
+        Returns: undefined
+      }
+      admin_slot_applications: { // ADDED
+        Args: { _campaign_id?: string; _only_pending?: boolean }
+        Returns: {
+          accounts: Json
+          applied_at: string
+          application_id: string
+          avg_views: number
+          banned: boolean
+          campaign_id: string
+          campaign_slots: number
+          campaign_title: string
+          clipper_user_id: string
+          decline_reason: string
+          email: string
+          followers_count: number
+          lifetime_views: number
+          real_name: string
+          slots_taken: number
+          status: string
+          strikes: number
+          username: string
+          whatsapp: string
+        }[]
+      }
+      apply_for_slot: { Args: { _campaign_id: string }; Returns: string } // ADDED
       admin_add_strike: {
         Args: { _reason: string; _user_id: string }
         Returns: number

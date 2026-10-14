@@ -48,7 +48,7 @@ async function findUserByEmail(email: string) {
 export async function ensureDemoAccount(role: DemoRole) {
   const cfg = DEMO[role];
   const password = randomPassword();
-  const accountType = role;
+  const accountType = role === "admin" ? "clipper" : role;
 
   let user = await findUserByEmail(cfg.email);
 

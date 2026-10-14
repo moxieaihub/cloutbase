@@ -63,7 +63,13 @@ function Dashboard() {
   const isStudent = profile?.account_type === "student";
 
   useEffect(() => {
-    if (isAdmin) return;
+    // Wait until the role lookup has finished; otherwise admins get bounced
+    // to /clipper before we know they are admins.
+    if (isAdmin === undefined) return;
+    if (isAdmin) {
+      navigate({ to: "/admin", replace: true });
+      return;
+    }
     if (isBusiness) navigate({ to: "/business", replace: true });
     else if (isStudent) navigate({ to: "/university/dashboard", replace: true });
     else if (isClipper) navigate({ to: "/clipper", replace: true });

@@ -1,26 +1,50 @@
+
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type DemoRole = "business" | "clipper" | "admin";
 
 const DEMO = {
-  business: { email: "demo.business@cloutbase.demo", username: "demo_business" },
-  clipper: { email: "demo.clipper@cloutbase.demo", username: "demo_clipper" },
-  admin: { email: "demo.admin@cloutbase.demo", username: "demo_admin" },
+  business: {
+    email: "demo.business@cloutbase.demo",
+    username: "demo_business",
+  },
+  clipper: {
+    email: "demo.clipper@cloutbase.demo",
+    username: "demo_clipper",
+  },
+  admin: {
+    email: "demo.admin@cloutbase.demo",
+    username: "demo_admin",
+  },
 } as const;
 
-function randomPassword() {
+function randomPassword(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(24));
   return `Demo!${Array.from(bytes, (b) => b.toString(36)).join("")}`;
 }
 
 async function findUserByEmail(email: string) {
-  // Demo users are few; a single page scan is enough.
-  const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
-  if (error) throw new Error(error.message);
-  return data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase()) ?? null;
+  const { data, error } =
+    await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 200,
+    });
+
+  if (error) {
+    throw new Error(`Failed to find demo user: ${error.message}`);
+  }
+
+  return (
+    data.users.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase(),
+    ) ?? null
+  );
 }
 
-/** Ensures a demo account exists, refreshes its password, and returns credentials. */
+/**
+ * Ensures a demo account exists, refreshes its password,
+ * assigns its roles and returns its login credentials.
+ */
 export async function ensureDemoAccount(role: DemoRole) {
   const cfg = DEMO[role];
   const password = randomPassword();
@@ -29,55 +53,103 @@ export async function ensureDemoAccount(role: DemoRole) {
   let user = await findUserByEmail(cfg.email);
 
   if (!user) {
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email: cfg.email,
-      password,
-      email_confirm: true,
-      user_metadata: { username: cfg.username, account_type: accountType, demo: true },
-    });
-    if (error) throw new Error(error.message);
+    const { data, error } =
+      await supabaseAdmin.auth.admin.createUser({
+        email: cfg.email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          username: cfg.username,
+          account_type: accountType,
+          demo: true,
+        },
+      });
+
+    if (error) {
+      throw new Error(`Failed to create demo account: ${error.message}`);
+    }
+
     user = data.user;
   } else {
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      password,
-      email_confirm: true,
-    });
-    if (error) throw new Error(error.message);
+    const { error } =
+      await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        password,
+        email_confirm: true,
+      });
+
+    if (error) {
+      throw new Error(`Failed to update demo account: ${error.message}`);
+    }
   }
 
-  if (!user) throw new Error("Could not prepare the demo account.");
+  if (!user) {
+    throw new Error("Could not prepare the demo account.");
+  }
 
+  // Create or update the user's profile.
   const { error: profileError } = await supabaseAdmin
     .from("profiles")
     .upsert(
-      { id: user.id, username: cfg.username, account_type: accountType, email: cfg.email },
+      {
+        id: user.id,
+        username: cfg.username,
+        account_type: accountType,
+        email: cfg.email,
+      },
       { onConflict: "id" },
     );
-  if (profileError) throw new Error(`Demo profile: ${profileError.message}`);
 
-  const roles: string[] = role === "admin" ? ["admin", "clipper"] : [role];
-  for (const r of roles) {
+  if (profileError) {
+    throw new Error(`Demo profile: ${profileError.message}`);
+  }
+
+  // Admin demo accounts require both admin and clipper roles.
+  const roles: string[] =
+    role === "admin" ? ["admin", "clipper"] : [role];
+
+  for (const assignedRole of roles) {
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .upsert({ user_id: user.id, role: r as any }, { onConflict: "user_id,role" });
-    // Previously ignored: a failed insert left the demo admin without the admin
-    // role, so /admin silently redirected to the clipper dashboard.
-    if (roleError) throw new Error(`Demo role "${r}": ${roleError.message}`);
+      .upsert(
+        {
+          user_id: user.id,
+          role: assignedRole as any,
+        },
+        { onConflict: "user_id,role" },
+      );
+
+    if (roleError) {
+      throw new Error(
+        `Demo role "${assignedRole}": ${roleError.message}`,
+      );
+    }
   }
 
-  // Verify the roles really landed before handing back credentials.
-  const { data: granted, error: verifyError } = await supabaseAdmin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id);
-  if (verifyError) throw new Error(verifyError.message);
-  if (role === "admin" && !(granted ?? []).some((g) => g.role === "admin")) {
-    throw new Error("Demo admin role could not be granted.");
+  // Verify that the required roles were successfully assigned.
+  const { data: granted, error: verifyError } =
+    await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+
+  if (verifyError) {
+    throw new Error(
+      `Failed to verify demo roles: ${verifyError.message}`,
+    );
   }
 
-  
-  
+  const grantedRoles = (granted ?? []).map((item) => item.role);
+
+  for (const requiredRole of roles) {
+    if (!grantedRoles.includes(requiredRole)) {
+      throw new Error(
+        `Demo role "${requiredRole}" could not be verified.`,
+      );
+    }
+  }
+
+  // Create or update the clipper profile for clippers and admins.
   if (role !== "business") {
     const { error: clipperError } = await supabaseAdmin
       .from("clipper_profiles")
@@ -101,5 +173,8 @@ export async function ensureDemoAccount(role: DemoRole) {
     }
   }
 
-  return { email: cfg.email, password };
+  return {
+    email: cfg.email,
+    password,
+  };
 }

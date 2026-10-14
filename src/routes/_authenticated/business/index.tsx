@@ -1,162 +1,67 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { Logo } from "@/components/Logo";
-import { TabBar } from "@/components/TabBar";
-import { supabase } from "@/integrations/supabase/client";
-import { PayoutBreakdown } from "@/components/PayoutBreakdown";
-import { formatNaira, type PayoutStats } from "@/lib/campaign";
+import { BrandShell } from "@/features/brand/components/BrandShell";
+import { CampaignCard } from "@/features/brand/components/CampaignCard";
+import { useBrandCampaigns, useBrandUsername } from "@/features/brand/queries";
+import { formatCompact } from "@/lib/campaign";
 
 export const Route = createFileRoute("/_authenticated/business/")({
   head: () => ({
     meta: [
-      { title: "Business dashboard — Cloutbase" },
-      {
-        name: "description",
-        content: "Track your Cloutbase clipping campaigns, budgets in Naira and review status.",
-      },
-      { property: "og:title", content: "Business dashboard — Cloutbase" },
-      { property: "og:description", content: "Your clipping campaigns and Naira budgets." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { title: "My campaigns — Cloutbase" },
+      { name: "description", content: "Your campaigns and the views confirmed so far." },
     ],
   }),
-  component: BusinessDashboard,
+  component: MyCampaigns,
 });
 
-const STATUS_LABEL: Record<string, string> = {
-  pending_review: "In review",
-  live: "Live",
-  rejected: "Rejected",
-  full: "Slots full",
-  ended: "Ended",
-};
-
-function BusinessDashboard() {
+function MyCampaigns() {
   const { user } = Route.useRouteContext();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { data: username } = useBrandUsername(user.id);
+  const { data: campaigns, isLoading } = useBrandCampaigns();
 
-  const { data: campaigns, isLoading } = useQuery({
-    queryKey: ["campaigns", "brand", user.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("campaigns")
-        .select(
-          "id, title, budget, clipper_pool, status, funded, ends_at, slots, kpi_target, created_at",
-        )
-        .eq("brand_user_id", user.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: stats } = useQuery({
-    queryKey: ["campaign-payout-stats", user.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("campaign_payout_stats")
-        .select(
-          "campaign_id, clipper_pool, per_clipper_ceiling, slots, rate_per_1000_views, spent, pool_remaining, total_views, slots_taken, clippers_maxed, slots_maxed_out",
-        )
-        .eq("brand_user_id", user.id);
-      if (error) throw error;
-      const map = new Map<string, PayoutStats>();
-      for (const row of data ?? []) {
-        map.set(row.campaign_id as string, row as unknown as PayoutStats);
-      }
-      return map;
-    },
-  });
-
-  const totalPool = (campaigns ?? []).reduce((sum, c) => sum + Number(c.clipper_pool ?? 0), 0);
-
-  async function signOut() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/login", replace: true });
-  }
+  const list = campaigns ?? [];
+  const confirmed = list.reduce((s, c) => s + Number(c.confirmed_views), 0);
+  const live = list.filter((c) => c.status === "live" || c.status === "full").length;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 pb-28 pt-10">
-      <header className="flex items-center justify-between">
-        <Logo size="sm" />
-        <button
-          onClick={signOut}
-          className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-        >
-          Sign out
-        </button>
-      </header>
+    <BrandShell>
+      <p className="text-sm text-muted-foreground">Brand account</p>
+      <h1 className="mt-1 break-words text-2xl font-semibold tracking-tight md:text-3xl">@{username ?? "…"}</h1>
 
-      <p className="mt-10 text-sm text-muted-foreground">Business account</p>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight">Your campaigns</h1>
-
-      <div className="mt-6 rounded-2xl border border-border p-5">
-        <p className="text-sm text-muted-foreground">Total clipper pool</p>
-        <p className="mt-1 text-3xl font-semibold tracking-tight text-money">
-          {formatNaira(totalPool)}
-        </p>
+      <div className="mt-6 grid grid-cols-3 gap-3">
+        <div className="rounded-2xl border border-border p-4">
+          <p className="text-[11px] text-muted-foreground">Campaigns</p>
+          <p className="mt-1 text-xl font-semibold">{list.length}</p>
+        </div>
+        <div className="rounded-2xl border border-border p-4">
+          <p className="text-[11px] text-muted-foreground">Live now</p>
+          <p className="mt-1 text-xl font-semibold">{live}</p>
+        </div>
+        <div className="rounded-2xl border border-border p-4">
+          <p className="text-[11px] text-muted-foreground">Confirmed views</p>
+          <p className="mt-1 text-xl font-semibold text-[#4DA3FF]">{formatCompact(confirmed)}</p>
+        </div>
       </div>
 
       <Link
-        to="/business/new"
-        className="mt-4 block rounded-xl bg-foreground px-4 py-4 text-center text-sm font-semibold text-background"
+        to="/business/packages"
+        className="mt-4 block rounded-xl bg-foreground px-4 py-4 text-center text-sm font-semibold text-background md:max-w-xs"
       >
         Create a campaign
       </Link>
 
-      <Link
-        to="/university"
-        className="mt-3 flex items-center justify-between rounded-2xl border border-border p-5 text-sm hover:border-foreground"
-      >
-        <span>
-          Cloutbase University
-          <span className="mt-0.5 block text-xs text-muted-foreground">
-            Courses on growing and selling with content
-          </span>
-        </span>
-        <span className="text-xs text-muted-foreground">Browse →</span>
-      </Link>
-
-
-
-      <section className="mt-8 space-y-3 pb-10">
-        {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {!isLoading && (campaigns?.length ?? 0) === 0 && (
-          <div className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
-            No campaigns yet. Create one and fund it — Cloutbase reviews it before it goes live.
+      <section className="mt-8 grid gap-4 md:grid-cols-2">
+        {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
+        {!isLoading && list.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground md:col-span-2">
+            No campaigns yet. Pick a package to get started — Cloutbase reviews your campaign before it goes live.
           </div>
-        )}
-        {campaigns?.map((c) => (
-          <article key={c.id} className="rounded-2xl border border-border p-5">
-            <div className="flex items-start justify-between gap-3">
-              <h2 className="text-sm font-semibold">{c.title}</h2>
-              <span className="shrink-0 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-                {STATUS_LABEL[c.status] ?? c.status}
-              </span>
-            </div>
-            <p className="mt-3 text-lg font-semibold tracking-tight text-money">
-              {formatNaira(Number(c.clipper_pool ?? 0))}
-              <span className="ml-1 text-xs font-normal text-muted-foreground">clipper pool</span>
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Budget {formatNaira(Number(c.budget ?? 0))} · {c.slots} slots
-              {c.kpi_target ? ` · ${c.kpi_target}` : ""}
-              {c.ends_at
-                ? ` · ends ${new Date(c.ends_at).toLocaleDateString("en-NG", {
-                    day: "numeric",
-                    month: "short",
-                  })}`
-                : ""}
-            </p>
-            {stats?.get(c.id) && <PayoutBreakdown stats={stats.get(c.id)!} />}
-          </article>
+        ) : null}
+        {list.map((c) => (
+          <CampaignCard key={c.campaign_id} c={c} />
         ))}
       </section>
-      <TabBar role="business" />
-    </main>
+    </BrandShell>
   );
 }

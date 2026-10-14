@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { Logo } from "@/components/Logo";
+import { useSignedIn } from "@/lib/useSignedIn";
 
 type Step = { title: string; body: string };
 
@@ -25,8 +26,11 @@ export function AboutCta({ children }: { children: ReactNode }) {
 }
 
 export function AboutPage({ eyebrow, title, intro, points, steps, ctaLabel, cta }: AboutPageProps) {
+  const signedIn = useSignedIn();
   const footerLink =
     "underline-offset-4 transition-colors hover:text-foreground hover:underline";
+  const accountButton =
+    "rounded-full border border-input px-4 py-2 font-semibold transition-colors hover:border-foreground/40";
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -55,12 +59,15 @@ export function AboutPage({ eyebrow, title, intro, points, steps, ctaLabel, cta 
             >
               For clippers
             </Link>
-            <Link
-              to="/login"
-              className="rounded-full border border-input px-4 py-2 font-semibold transition-colors hover:border-foreground/40"
-            >
-              Log in
-            </Link>
+            {signedIn === undefined ? null : signedIn ? (
+              <Link to="/dashboard" className={accountButton}>
+                Dashboard
+              </Link>
+            ) : (
+              <Link to="/login" className={accountButton}>
+                Log in
+              </Link>
+            )}
           </nav>
         </div>
       </header>

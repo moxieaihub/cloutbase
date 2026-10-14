@@ -5,10 +5,14 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 type InitInput = { courseId: string; callbackUrl?: string };
 type ConfirmInput = { courseId: string; reference: string };
 
+const NOT_CONFIGURED =
+  "Course payments aren't switched on yet. Please try again soon.";
+
 /**
- * Starts payment for a course. When Paystack keys are configured a real
- * checkout is initialised; otherwise the caller gets a placeholder reference
- * that must still be confirmed before access is granted.
+ * Starts payment for a course. Requires a live Paystack setup (secret key +
+ * admin config enabled with provider = paystack). If that isn't in place this
+ * FAILS CLOSED — it never hands out access without a verified payment.
+ * Free courses (price 0) are the only thing that can unlock without Paystack.
  */
 export const initCoursePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -43,7 +47,12 @@ export const initCoursePayment = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (secret && config?.enabled && config.provider === "paystack") {
-      const email = (context.claims as { email?: string } | null)?.email;
+      let email = (context.claims as { email?: string } | null)?.email;
+      if (!email) {
+        const { data: u } = await supabaseAdmin.auth.admin.getUserById(context.userId);
+        email = u.user?.email ?? undefined;
+      }
+      if (!email) throw new Error("Your account has no email address for the receipt");
       const res = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
         headers: { Authorization: `Bearer ${secret}`, "content-type": "application/json" },
@@ -71,7 +80,14 @@ export const initCoursePayment = createServerFn({ method: "POST" })
       };
     }
 
-    return { mode: "placeholder" as const, reference, authorizationUrl: null };
+    // Free course: unlock without a gateway.
+    if (Number(course.price) <= 0) {
+      return { mode: "free" as const, reference, authorizationUrl: null };
+    }
+
+    // No working gateway → refuse. (Previously this returned a "placeholder"
+    // reference that the client confirmed straight away = free courses.)
+    throw new Error(NOT_CONFIGURED);
   });
 
 /**
@@ -113,7 +129,19 @@ export const confirmCoursePurchase = createServerFn({ method: "POST" })
     let amountPaid = Number(course.price);
     let verified = false;
 
-    if (secret && config?.enabled && config.provider === "paystack") {
+    // A reference can only ever unlock one purchase.
+    const { data: reused } = await supabaseAdmin
+      .from("course_purchases")
+      .select("id")
+      .eq("paystack_ref", data.reference)
+      .maybeSingle();
+    if (reused) throw new Error("This payment reference has already been used");
+
+    if (Number(course.price) <= 0) {
+      amountPaid = 0;
+    } else if (!(secret && config?.enabled && config.provider === "paystack")) {
+      throw new Error(NOT_CONFIGURED);
+    } else {
       const res = await fetch(
         `https://api.paystack.co/transaction/verify/${encodeURIComponent(data.reference)}`,
         { headers: { Authorization: `Bearer ${secret}` } },

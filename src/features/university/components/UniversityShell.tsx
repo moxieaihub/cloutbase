@@ -1,40 +1,29 @@
-import { Link } from "@tanstack/react-router";
-
-import { UniversityTopBar } from "@/features/university/components/UniversityTopBar";
-
-const TABS = [
-  { to: "/university/dashboard", label: "Dashboard", exact: true },
-  { to: "/university", label: "Catalog", exact: true },
-  { to: "/university/my-courses", label: "My courses", exact: false },
-] as const;
+import { UniversityHeader } from "@/features/university/components/UniversityHeader";
+import {
+  UniversityMobileTabs,
+  UniversitySidebar,
+} from "@/features/university/components/UniversitySidebar";
 
 export function UniversityShell({
   children,
   hideTabs = false,
 }: {
   children: React.ReactNode;
+  /** Hides the phone tab row on course/classroom pages. The desktop sidebar always shows. */
   hideTabs?: boolean;
 }) {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 pb-28 pt-10 lg:px-10">
-      <UniversityTopBar />
+    <div className="min-h-screen">
+      <UniversityHeader />
 
-      {hideTabs ? null : (
-        <nav className="mt-6 flex gap-6 border-b border-border text-sm">
-          {TABS.map((t) => (
-            <Link
-              key={t.to}
-              to={t.to}
-              activeOptions={{ exact: t.exact }}
-              className="-mb-px border-b-2 border-transparent pb-3 text-muted-foreground hover:text-foreground data-[status=active]:border-[#4DA3FF] data-[status=active]:text-foreground"
-            >
-              {t.label}
-            </Link>
-          ))}
-        </nav>
-      )}
+      <div className="mx-auto w-full max-w-md px-6 pb-28 pt-8 md:max-w-3xl md:px-8 lg:grid lg:max-w-6xl lg:grid-cols-[220px_1fr] lg:gap-10 lg:px-12 lg:pb-12 lg:pt-10">
+        <UniversitySidebar />
 
-      {children}
-    </main>
+        <main className="min-w-0">
+          {hideTabs ? null : <UniversityMobileTabs />}
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }

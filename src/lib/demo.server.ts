@@ -76,19 +76,29 @@ export async function ensureDemoAccount(role: DemoRole) {
     throw new Error("Demo admin role could not be granted.");
   }
 
+  
+  
   if (role !== "business") {
-    await supabaseAdmin.from("clipper_profiles").upsert(
-      {
-        user_id: user.id,
-        real_name: "Demo Clipper",
-        followers_count: 12000,
-        avg_views: 45000,
-        is_approved: true,
-        is_inhouse: true,
-        is_priority: true,
-      },
-      { onConflict: "user_id" },
-    );
+    const { error: clipperError } = await supabaseAdmin
+      .from("clipper_profiles")
+      .upsert(
+        {
+          user_id: user.id,
+          real_name: "Demo Clipper",
+          followers_count: 12000,
+          avg_views: 45000,
+          is_approved: true,
+          is_inhouse: true,
+          is_priority: true,
+        },
+        { onConflict: "user_id" },
+      );
+
+    if (clipperError) {
+      throw new Error(
+        `Demo clipper profile: ${clipperError.message}`,
+      );
+    }
   }
 
   return { email: cfg.email, password };

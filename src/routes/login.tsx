@@ -1,12 +1,10 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
 import { Logo } from "@/components/Logo";
 
 import { RecentPayouts } from "@/components/RecentPayouts";
 import { supabase } from "@/integrations/supabase/client";
-import { startDemoSession } from "@/lib/demo.functions";
 
 
 // Only follow same-site paths ("/university"), never "//evil.com" or full URLs.
@@ -47,28 +45,6 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [demoLoading, setDemoLoading] = useState<string | null>(null);
-  const beginDemo = useServerFn(startDemoSession);
-
-  async function handleDemo(role: "business" | "clipper" | "admin") {
-    setError(null);
-    setDemoLoading(role);
-    try {
-      const creds = await beginDemo({ data: { role } });
-      const { error: signInError } = await supabase.auth.signInWithPassword(creds);
-      if (signInError) throw new Error(signInError.message);
-      if (redirect) {
-        router.history.push(redirect);
-        return;
-      }
-      navigate({ to: role === "admin" ? "/admin" : role === "business" ? "/business" : "/clipper" });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start the demo session.");
-    } finally {
-      setDemoLoading(null);
-    }
-  }
-
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -154,25 +130,6 @@ function LoginPage() {
             {loading ? "Logging in…" : "Log in"}
           </button>
         </form>
-
-        <div className="mt-6 rounded-[16px] border border-border/60 bg-card p-4">
-          <p className="mb-3 text-center text-[12px] tracking-[0.02em] text-muted-foreground">
-            Demo mode — one tap in, no password needed
-          </p>
-          <div className="flex flex-col gap-2">
-            {(["business", "clipper", "admin"] as const).map((role) => (
-              <button
-                key={role}
-                type="button"
-                onClick={() => handleDemo(role)}
-                disabled={demoLoading !== null}
-                className="w-full rounded-[13px] border border-input bg-background p-3 text-[14px] font-semibold capitalize transition-colors hover:border-foreground/40 disabled:opacity-50"
-              >
-                {demoLoading === role ? "Opening…" : `Continue as ${role}`}
-              </button>
-            ))}
-          </div>
-        </div>
 
         <p className="mt-4 text-center text-[13px] text-muted-foreground">
           New here?{" "}

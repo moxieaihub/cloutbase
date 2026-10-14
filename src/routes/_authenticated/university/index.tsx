@@ -1,13 +1,8 @@
-// import { createFileRoute, Link } from "@tanstack/react-router";
-
-// import { Logo } from "@/components/Logo";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { CoursePoster } from "@/components/CoursePoster";
 import { UniversityShell } from "@/features/university/components/UniversityShell";
 import { useOwnedCourseIds, usePublishedCourses } from "@/features/university/queries";
-// import { CoursePoster } from "@/components/CoursePoster";
-// import { useOwnedCourseIds, usePublishedCourses } from "@/features/university/queries";
 
 export const Route = createFileRoute("/_authenticated/university/")({
   head: () => ({
@@ -40,20 +35,6 @@ export const Route = createFileRoute("/_authenticated/university/")({
   ),
 });
 
-// Page container: phone-width on mobile, widens progressively on larger screens.
-// function Shell({ children }: { children: React.ReactNode }) {
-//   return (
-//     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-28 pt-10 sm:max-w-2xl sm:px-8 lg:max-w-5xl lg:px-10 xl:max-w-6xl">
-//       <header className="flex items-center justify-between">
-//         <Logo size="sm" />
-//         <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-//           Back
-//         </Link>
-//       </header>
-//       {children}
-//     </main>
-//   );
-// }
 function Shell({ children }: { children: React.ReactNode }) {
   return <UniversityShell>{children}</UniversityShell>;
 }
@@ -77,7 +58,7 @@ function CourseGrid({
 
 function Catalog() {
   const { user } = Route.useRouteContext();
-  const { data: courses, isLoading } = usePublishedCourses();
+  const { data: courses, isLoading, error } = usePublishedCourses();
   const { data: owned } = useOwnedCourseIds(user.id);
 
   const all = courses ?? [];
@@ -102,6 +83,10 @@ function Catalog() {
 
       {isLoading ? (
         <p className="mt-8 text-sm text-muted-foreground">Loading courses…</p>
+      ) : error ? (
+        <p className="mt-8 rounded-2xl border border-dashed border-border p-5 text-sm text-red-400">
+          Couldn't load courses: {(error as Error).message}
+        </p>
       ) : (
         <>
           {rows.map((row) => (

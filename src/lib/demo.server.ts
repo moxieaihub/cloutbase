@@ -1,7 +1,7 @@
 
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabase } from "@/integrations/supabase/client.server";
 
-export type DemoRole = "business" | "clipper" | "admin";
+export type DemoRole = "business" | "clipper" | "";
 
 const DEMO = {
   business: {
@@ -48,8 +48,7 @@ async function findUserByEmail(email: string) {
 export async function ensureDemoAccount(role: DemoRole) {
   const cfg = DEMO[role];
   const password = randomPassword();
-  const accountType = role === "admin" ? "clipper" : role;
-
+const accountType = role === "admin" ? "clipper" : role;
   let user = await findUserByEmail(cfg.email);
 
   if (!user) {
@@ -149,9 +148,9 @@ export async function ensureDemoAccount(role: DemoRole) {
     }
   }
 
-  // Create or update the clipper profile for clippers and admins.
+  // Create or update the clipper profile for clippers and s.
   if (role !== "business") {
-    const { error: clipperError } = await supabaseAdmin
+    const { error: clipperError } = await supabase
       .from("clipper_profiles")
       .upsert(
         {

@@ -47,19 +47,33 @@ export async function ensureDemoAccount(role: DemoRole) {
 
   if (!user) throw new Error("Could not prepare the demo account.");
 
-  await supabaseAdmin
+  const { error: profileError } = await supabaseAdmin
     .from("profiles")
     .upsert(
       { id: user.id, username: cfg.username, account_type: accountType, email: cfg.email },
       { onConflict: "id" },
     );
+  if (profileError) throw new Error(`Demo profile: ${profileError.message}`);
 
   const roles: string[] = role === "admin" ? ["admin", "clipper"] : [role];
   for (const r of roles) {
-    await supabaseAdmin
+    const { error: roleError } = await supabaseAdmin
       .from("user_roles")
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .upsert({ user_id: user.id, role: r as any }, { onConflict: "user_id,role" });
+    // Previously ignored: a failed insert left the demo admin without the admin
+    // role, so /admin silently redirected to the clipper dashboard.
+    if (roleError) throw new Error(`Demo role "${r}": ${roleError.message}`);
+  }
+
+  // Verify the roles really landed before handing back credentials.
+  const { data: granted, error: verifyError } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id);
+  if (verifyError) throw new Error(verifyError.message);
+  if (role === "admin" && !(granted ?? []).some((g) => g.role === "admin")) {
+    throw new Error("Demo admin role could not be granted.");
   }
 
   if (role !== "business") {

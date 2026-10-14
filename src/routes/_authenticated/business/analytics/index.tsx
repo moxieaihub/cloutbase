@@ -1,93 +1,54 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 
-import { Logo } from "@/components/Logo";
-import { TabBar } from "@/components/TabBar";
-import { supabase } from "@/integrations/supabase/client";
-import { formatNaira } from "@/lib/campaign";
-import { formatViews } from "@/lib/views";
+import { BrandShell } from "@/features/brand/components/BrandShell";
+import { ProgressBar } from "@/features/brand/components/ProgressBar";
+import { campaignStage } from "@/features/brand/format";
+import { useBrandCampaigns } from "@/features/brand/queries";
+import { formatCompact } from "@/lib/campaign";
 
 export const Route = createFileRoute("/_authenticated/business/analytics/")({
   head: () => ({
     meta: [
-      { title: "Campaign analytics — Cloutbase" },
-      {
-        name: "description",
-        content:
-          "Verified views, clips delivered and pool spent across every Cloutbase campaign you fund.",
-      },
-      { property: "og:title", content: "Campaign analytics — Cloutbase" },
-      {
-        property: "og:description",
-        content: "Delivery proof for your Cloutbase clipping campaigns.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { title: "Analytics — Cloutbase" },
+      { name: "description", content: "Confirmed delivered views across your campaigns." },
     ],
   }),
   component: BrandAnalytics,
 });
 
-export type BrandCampaignRow = {
-  campaign_id: string;
-  title: string;
-  status: string;
-  budget: number;
-  clipper_pool: number;
-  per_clipper_ceiling: number;
-  rate_per_1000_views: number;
-  slots: number;
-  slots_taken: number;
-  clipper_count: number;
-  clip_count: number;
-  total_views: number;
-  tiktok_views: number;
-  ig_views: number;
-  youtube_views: number;
-  spent: number;
-  ends_at: string | null;
-  created_at: string;
-};
-
 function BrandAnalytics() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["brand-campaign-analytics"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("brand_campaign_analytics");
-      if (error) throw error;
-      return (data ?? []) as unknown as BrandCampaignRow[];
-    },
-  });
-
-  const lifetimeViews = (data ?? []).reduce((s, r) => s + Number(r.total_views ?? 0), 0);
+  const { data, isLoading } = useBrandCampaigns();
+  const list = (data ?? []).filter((c) => c.funded);
+  const confirmed = list.reduce((s, c) => s + Number(c.confirmed_views), 0);
+  const pending = list.reduce((s, c) => s + Number(c.pending_views), 0);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 pb-28 pt-10">
-      <header className="flex items-center justify-between">
-        <Logo size="sm" />
-        <Link to="/business" className="text-sm text-muted-foreground hover:text-foreground">
-          Campaigns
-        </Link>
-      </header>
-
-      <h1 className="mt-10 text-2xl font-semibold tracking-tight">Analytics</h1>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Verified views only. Nothing here is estimated.
+    <BrandShell>
+      <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Analytics</h1>
+      <p className="mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground">
+        A view only counts once its clip has stayed live for 5 full days. Nothing here is estimated.
       </p>
 
-      <div className="mt-6 rounded-2xl border border-border p-5">
-        <p className="text-sm text-muted-foreground">Total verified views</p>
-        <p className="mt-1 text-3xl font-semibold tracking-tight">{formatViews(lifetimeViews)}</p>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-border p-5">
+          <p className="text-sm text-muted-foreground">Confirmed delivered views</p>
+          <p className="mt-1 text-3xl font-semibold tracking-tight text-[#4DA3FF]">{formatCompact(confirmed)}</p>
+        </div>
+        <div className="rounded-2xl border border-border p-5">
+          <p className="text-sm text-muted-foreground">Confirming</p>
+          <p className="mt-1 text-3xl font-semibold tracking-tight text-muted-2">{formatCompact(pending)}</p>
+          <p className="mt-1 text-[11px] text-muted-2">Clips still inside their 5-day window</p>
+        </div>
       </div>
 
-      <section className="mt-6 space-y-3">
-        {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {!isLoading && (data ?? []).length === 0 && (
-          <div className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
-            No campaigns yet.
+      <section className="mt-6 grid gap-3 md:grid-cols-2">
+        {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
+        {!isLoading && list.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground md:col-span-2">
+            No funded campaigns yet.
           </div>
-        )}
-        {(data ?? []).map((c) => (
+        ) : null}
+        {list.map((c) => (
           <Link
             key={c.campaign_id}
             to="/business/analytics/$campaignId"
@@ -96,20 +57,22 @@ function BrandAnalytics() {
           >
             <div className="flex items-start justify-between gap-3">
               <h2 className="text-sm font-semibold">{c.title}</h2>
-              <span className="shrink-0 text-[11px] text-muted-foreground">{c.status}</span>
+              <span className="shrink-0 text-[11px] text-muted-foreground">{campaignStage(c)}</span>
             </div>
             <p className="mt-3 text-2xl font-semibold tracking-tight">
-              {formatViews(Number(c.total_views ?? 0))}
-              <span className="ml-1 text-xs font-normal text-muted-foreground">verified views</span>
+              {formatCompact(Number(c.confirmed_views))}
+              <span className="ml-1 text-xs font-normal text-muted-foreground">confirmed views</span>
             </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {c.clip_count} clips · {c.clipper_count} clippers ·{" "}
-              {formatNaira(Number(c.spent ?? 0))} of {formatNaira(Number(c.clipper_pool ?? 0))} pool
-            </p>
+            {Number(c.guaranteed_views) > 0 ? (
+              <div className="mt-3">
+                <ProgressBar confirmed={Number(c.confirmed_views)} pending={Number(c.pending_views)} target={Number(c.guaranteed_views)} />
+                <p className="mt-1 text-[11px] text-muted-2">of {formatCompact(Number(c.guaranteed_views))} guaranteed</p>
+              </div>
+            ) : null}
+            <p className="mt-2 text-xs text-muted-foreground">{c.clip_count} clips · {c.clipper_count} clippers</p>
           </Link>
         ))}
       </section>
-      <TabBar role="business" />
-    </main>
+    </BrandShell>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
@@ -6,6 +6,7 @@ import { CommunityLinks } from "@/components/CommunityLinks";
 import { Logo } from "@/components/Logo";
 import { PlatformBackdrop } from "@/components/PlatformBackdrop";
 import { PayoutTicker } from "@/components/PayoutTicker";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -152,9 +153,29 @@ function NavLinks({ className, onNavigate }: { className: string; onNavigate?: (
   );
 }
 
+/** undefined = still checking, false = signed out, true = signed in. */
+function useSignedIn(): boolean | undefined {
+  const [signedIn, setSignedIn] = useState<boolean | undefined>(undefined);
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (active) setSignedIn(Boolean(data.session));
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setSignedIn(Boolean(session));
+    });
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+  return signedIn;
+}
+
 function SiteHeader() {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
+  const signedIn = useSignedIn();
 
   return (
     <header className="sticky top-0 z-50 px-4 pt-3 md:px-6 md:pt-4">
@@ -169,18 +190,29 @@ function SiteHeader() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <Link
-              to="/login"
-              className="hidden rounded-full px-4 py-2 text-[14px] font-semibold transition-colors hover:bg-card md:inline-flex"
-            >
-              Log in
-            </Link>
-            <a
-              href="#get-started"
-              className="rounded-full bg-foreground px-4 py-2 text-[13px] font-semibold text-background transition-all hover:-translate-y-0.5 md:text-[14px]"
-            >
-              Get started
-            </a>
+            {signedIn === undefined ? null : signedIn ? (
+              <Link
+                to="/dashboard"
+                className="rounded-full bg-foreground px-4 py-2 text-[13px] font-semibold text-background transition-all hover:-translate-y-0.5 md:text-[14px]"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="hidden rounded-full px-4 py-2 text-[14px] font-semibold transition-colors hover:bg-card md:inline-flex"
+                >
+                  Log in
+                </Link>
+                <a
+                  href="#get-started"
+                  className="rounded-full bg-foreground px-4 py-2 text-[13px] font-semibold text-background transition-all hover:-translate-y-0.5 md:text-[14px]"
+                >
+                  Get started
+                </a>
+              </>
+            )}
             <button
               type="button"
               className="flex h-9 w-9 items-center justify-center rounded-full border border-input md:hidden"
@@ -207,13 +239,23 @@ function SiteHeader() {
                 className="rounded-xl px-3 py-3 text-[15px] text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
                 onNavigate={close}
               />
-              <Link
-                to="/login"
-                onClick={close}
-                className="rounded-xl px-3 py-3 text-[15px] font-semibold transition-colors hover:bg-card"
-              >
-                Log in
-              </Link>
+              {signedIn ? (
+                <Link
+                  to="/dashboard"
+                  onClick={close}
+                  className="rounded-xl px-3 py-3 text-[15px] font-semibold transition-colors hover:bg-card"
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={close}
+                  className="rounded-xl px-3 py-3 text-[15px] font-semibold transition-colors hover:bg-card"
+                >
+                  Log in
+                </Link>
+              )}
             </nav>
           </div>
         )}

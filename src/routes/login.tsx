@@ -160,7 +160,7 @@ function LoginPage() {
             Demo mode — one tap in, no password needed
           </p>
           <div className="flex flex-col gap-2">
-            {(["business", "clipper"] as const).map((role) => (
+            {(["business", "clipper", "admin"] as const).map((role) => (
               <button
                 key={role}
                 type="button"

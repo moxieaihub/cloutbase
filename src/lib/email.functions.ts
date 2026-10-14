@@ -10,13 +10,15 @@ type Input = {
   reason?: string;
 };
 
-const naira = (v: number) => `₦${Math.round(Number(v ?? 0)).toLocaleString("en-NG")}`;
 const num = (v: number | null | undefined) => Number(v ?? 0).toLocaleString("en-NG");
 
 /**
  * Sends a campaign email to the brand through the admin-configured external
  * email service. Nothing is faked: when no service is configured the email is
  * logged as "queued" and the caller is told it was not delivered.
+ *
+ * Brands never see the internal split (clipper pool, per-clipper cap,
+ * commission) — emails talk about guaranteed and confirmed views only.
  */
 export const sendCampaignEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -37,9 +39,7 @@ export const sendCampaignEmail = createServerFn({ method: "POST" })
 
     const { data: campaign, error: campaignError } = await supabaseAdmin
       .from("campaigns")
-      .select(
-        "id, title, status, budget, clipper_pool, per_clipper_ceiling, rate_per_1000_views, slots, ends_at, reject_reason, brand_user_id",
-      )
+      .select("id, title, slots, ends_at, reject_reason, brand_user_id, guaranteed_views")
       .eq("id", data.campaignId)
       .maybeSingle();
     if (campaignError) throw new Error(campaignError.message);
@@ -50,7 +50,6 @@ export const sendCampaignEmail = createServerFn({ method: "POST" })
       data.kind === "performance_report" && campaign.brand_user_id === context.userId;
     if (!isAdmin && !isOwnerReport) throw new Error("Not allowed");
 
-
     const { data: brand, error: brandError } = await supabaseAdmin
       .from("profiles")
       .select("username, email")
@@ -60,6 +59,7 @@ export const sendCampaignEmail = createServerFn({ method: "POST" })
     if (!brand?.email) throw new Error("Brand has no email on file");
 
     const hello = `Hi ${brand.username ?? "there"},`;
+    const guaranteed = Number(campaign.guaranteed_views ?? 0);
     let subject: string;
     let body: string;
 
@@ -69,11 +69,11 @@ export const sendCampaignEmail = createServerFn({ method: "POST" })
         hello,
         "",
         `Your campaign "${campaign.title}" has been reviewed and is now live on Cloutbase.`,
-        `Clipper pool: ${naira(Number(campaign.clipper_pool))}`,
-        `Slots: ${campaign.slots} · Earn up to ${naira(Number(campaign.per_clipper_ceiling))} per clipper`,
+        guaranteed > 0 ? `Guaranteed views: ${num(guaranteed)}` : "",
+        `Clipper accounts: ${campaign.slots}`,
         campaign.ends_at ? `Runs until: ${new Date(campaign.ends_at).toDateString()}` : "",
         "",
-        "You can follow delivery from your Cloutbase dashboard.",
+        "You can follow confirmed delivered views from your Cloutbase dashboard.",
         "— Cloutbase",
       ]
         .filter(Boolean)
@@ -95,16 +95,43 @@ export const sendCampaignEmail = createServerFn({ method: "POST" })
     } else {
       const { data: clips, error: clipsError } = await supabaseAdmin
         .from("clip_submissions")
-        .select("platform, view_count, earnings, clipper_user_id")
+        .select(
+          "platform, view_count, snapshot_view_count, counts_from, posted_at, deleted_before_snapshot, clipper_user_id",
+        )
         .eq("campaign_id", campaign.id);
       if (clipsError) throw new Error(clipsError.message);
 
-      const rows = clips ?? [];
-      const total = rows.reduce((s, r) => s + Number(r.view_count ?? 0), 0);
-      const byPlatform = (p: string) =>
-        rows.filter((r) => r.platform === p).reduce((s, r) => s + Number(r.view_count ?? 0), 0);
-      const spent = rows.reduce((s, r) => s + Number(r.earnings ?? 0), 0);
-      const clippers = new Set(rows.map((r) => r.clipper_user_id)).size;
+      // Same 5-day rule as the brand dashboard: confirmed, still confirming, or removed.
+      const now = Date.now();
+      const rows = (clips ?? []).map((r) => {
+        const confirmsAt = r.counts_from
+          ? new Date(r.counts_from).getTime()
+          : new Date(r.posted_at).getTime() + 5 * 86_400_000;
+        const removed = Boolean(r.deleted_before_snapshot);
+        const confirmed = !removed && confirmsAt <= now;
+        const views = removed
+          ? 0
+          : confirmed
+            ? Number(r.snapshot_view_count ?? r.view_count ?? 0)
+            : Number(r.view_count ?? 0);
+        return {
+          platform: r.platform as string,
+          clipper: r.clipper_user_id as string,
+          removed,
+          confirmed,
+          views,
+        };
+      });
+
+      const confirmedViews = (platform?: string) =>
+        rows
+          .filter((r) => r.confirmed && (!platform || r.platform === platform))
+          .reduce((sum, r) => sum + r.views, 0);
+      const confirming = rows
+        .filter((r) => !r.confirmed && !r.removed)
+        .reduce((sum, r) => sum + r.views, 0);
+      const counted = rows.filter((r) => !r.removed);
+      const clippers = new Set(counted.map((r) => r.clipper)).size;
 
       subject = `Performance report — ${campaign.title}`;
       body = [
@@ -112,13 +139,13 @@ export const sendCampaignEmail = createServerFn({ method: "POST" })
         "",
         `Here is the delivery report for "${campaign.title}".`,
         "",
-        `Total views: ${num(total)}`,
-        `TikTok: ${num(byPlatform("tiktok"))}`,
-        `Instagram: ${num(byPlatform("ig"))}`,
-        `YouTube: ${num(byPlatform("youtube"))}`,
+        `Confirmed delivered views: ${num(confirmedViews())}${guaranteed > 0 ? ` of ${num(guaranteed)} guaranteed` : ""}`,
+        `TikTok: ${num(confirmedViews("tiktok"))}`,
+        `Instagram: ${num(confirmedViews("ig"))}`,
+        `YouTube: ${num(confirmedViews("youtube"))}`,
         "",
-        `Clips submitted: ${num(rows.length)} from ${num(clippers)} clippers`,
-        `Clipper pool: ${naira(Number(campaign.clipper_pool))} · Paid out so far: ${naira(spent)}`,
+        `Still confirming: ${num(confirming)} (counts once each clip has stayed live 5 days)`,
+        `Clips: ${num(counted.length)} from ${num(clippers)} clippers`,
         "",
         "— Cloutbase",
       ].join("\n");

@@ -224,6 +224,11 @@ function CampaignBriefPage() {
             <CopyField label="CTA link" value={campaign.cta_link} />
             <CopyField label="Watermark" value={campaign.watermark_url} />
             <CopyField label="Source file" value={campaign.source_file_link} />
+            {!campaign.joined && !campaign.caption ? (
+              <p className="rounded-xl border border-dashed border-border p-4 text-xs leading-relaxed text-muted-foreground">
+                The exact caption and source file unlock once you're accepted onto this campaign.
+              </p>
+            ) : null}
           </div>
 
           {isInhouse ? (

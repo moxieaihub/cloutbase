@@ -155,11 +155,16 @@ function UniversityDashboard() {
               Full catalog
             </Link>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
+          {/* <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
             {discover.map((c) => (
               <CoursePoster key={c.id} course={c} owned={false} />
             ))}
-          </div>
+          </div> */}
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+  {discover.map((c, i) => (
+    <CoursePoster key={c.id} course={c} owned={false} index={i} />
+  ))}
+</div>
         </section>
       ) : null}
     </UniversityShell>

@@ -7,14 +7,15 @@ import { CourseHero } from "@/features/university/components/CourseHero";
 import { LessonList } from "@/features/university/components/LessonList";
 import { RatingCard } from "@/features/university/components/RatingCard";
 import { UniversityShell } from "@/features/university/components/UniversityShell";
+import { WorkbookButton } from "@/features/university/components/WorkbookButton";
 import { useCourse, useLessons, useOwnsCourse } from "@/features/university/queries";
 
 export const Route = createFileRoute("/_authenticated/university/$courseId/classroom")({
   head: () => ({
     meta: [
-      { title: "Classroom — Cloutbase University" },
+      { title: "Classroom — Learn to earn" },
       { name: "description", content: "Watch your lessons and download your workbook." },
-      { property: "og:title", content: "Classroom — Cloutbase University" },
+      { property: "og:title", content: "Classroom — Learn to earn" },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -126,18 +127,7 @@ function Classroom() {
             <LessonList items={list} locked={false} activeIndex={active} onSelect={setActive} />
           </section>
 
-          {course.pdf_url ? (
-            <a
-              href={course.pdf_url}
-              target="_blank"
-              rel="noreferrer"
-              download
-              className="flex items-center justify-between rounded-2xl border border-border p-4 text-sm hover:border-foreground"
-            >
-              <span>Download the workbook (PDF)</span>
-              <span className="text-xs text-muted-foreground">↓</span>
-            </a>
-          ) : null}
+          {course.pdf_url ? <WorkbookButton value={course.pdf_url} /> : null}
 
           <RatingCard courseId={courseId} userId={user.id} />
         </aside>

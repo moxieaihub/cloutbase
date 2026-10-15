@@ -39,8 +39,14 @@ export const initCampaignFunding = createServerFn({ method: "POST" })
       throw new Error("Online payment isn’t switched on yet. Contact Cloutbase to pay by bank transfer.");
     }
 
+    let email = (context.claims as { email?: string } | null)?.email;
+    if (!email) {
+      const { data: u } = await supabaseAdmin.auth.admin.getUserById(context.userId);
+      email = u.user?.email ?? undefined;
+    }
+    if (!email) throw new Error("Your account has no email address for the receipt");
+
     const reference = `cb_camp_${campaign.id.slice(0, 8)}_${Date.now()}`;
-    const email = (context.claims as { email?: string } | null)?.email;
     const res = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: { Authorization: `Bearer ${secret}`, "content-type": "application/json" },

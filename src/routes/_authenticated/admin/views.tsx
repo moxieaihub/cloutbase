@@ -48,24 +48,32 @@ export const Route = createFileRoute("/_authenticated/admin/views")({
   ),
 });
 
+// function Shell({ children }: { children: React.ReactNode }) {
+//   return (
+//     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-6 py-10">
+//       <header className="flex items-center justify-between">
+//         <Logo size="sm" />
+//         <div className="flex gap-4 text-sm text-muted-foreground">
+//           <Link to="/admin/payouts" className="hover:text-foreground">
+//             Payouts
+//           </Link>
+//           <Link to="/admin/scraper" className="hover:text-foreground">
+//             View Scraper API
+//           </Link>
+//         </div>
+//       </header>
+//       <div className="mt-8">{children}</div>
+//     </main>
+//   );
+// }
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-6 py-10">
-      <header className="flex items-center justify-between">
-        <Logo size="sm" />
-        <div className="flex gap-4 text-sm text-muted-foreground">
-          <Link to="/admin/payouts" className="hover:text-foreground">
-            Payouts
-          </Link>
-          <Link to="/admin/scraper" className="hover:text-foreground">
-            View Scraper API
-          </Link>
-        </div>
-      </header>
-      <div className="mt-8">{children}</div>
-    </main>
+    <AdminShell>
+      <div className="max-w-3xl">{children}</div>
+    </AdminShell>
   );
 }
+
 
 type ClipRow = {
   id: string;

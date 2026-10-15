@@ -40,6 +40,21 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 // Course grid: 2 cols on phones, 3 on tablets, 4 on laptops, 5 on wide desktops.
+// function CourseGrid({
+//   courses,
+//   owned,
+// }: {
+//   courses: React.ComponentProps<typeof CoursePoster>["course"][];
+//   owned?: Set<string>;
+// }) {
+//   return (
+//     <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5">
+//       {courses.map((c) => (
+//         <CoursePoster key={c.id} course={c} owned={owned?.has(c.id) ?? false} />
+//       ))}
+//     </div>
+//   );
+// }
 function CourseGrid({
   courses,
   owned,
@@ -48,9 +63,9 @@ function CourseGrid({
   owned?: Set<string>;
 }) {
   return (
-    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5">
-      {courses.map((c) => (
-        <CoursePoster key={c.id} course={c} owned={owned?.has(c.id) ?? false} />
+    <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+      {courses.map((c, i) => (
+        <CoursePoster key={c.id} course={c} owned={owned?.has(c.id) ?? false} index={i} />
       ))}
     </div>
   );

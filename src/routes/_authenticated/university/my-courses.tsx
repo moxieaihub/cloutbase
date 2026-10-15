@@ -6,9 +6,9 @@ import { useOwnedCourseIds, usePublishedCourses } from "@/features/university/qu
 export const Route = createFileRoute("/_authenticated/university/my-courses")({
   head: () => ({
     meta: [
-      { title: "My courses — Cloutbase University" },
+      { title: "My courses — Learn to earn" },
       { name: "description", content: "Every course you own, with lifetime access." },
-      { property: "og:title", content: "My courses — Cloutbase University" },
+      { property: "og:title", content: "My courses — Learn to earn" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

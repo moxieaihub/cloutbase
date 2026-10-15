@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { Logo } from "@/components/Logo";
+import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,17 +58,25 @@ export const Route = createFileRoute("/_authenticated/admin/payments")({
   ),
 });
 
+// function Shell({ children }: { children: React.ReactNode }) {
+//   return (
+//     <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-10">
+//       <header className="flex items-center justify-between">
+//         <Logo size="sm" />
+//         <Link to="/admin/payouts" className="text-sm text-muted-foreground hover:text-foreground">
+//           Payout queue
+//         </Link>
+//       </header>
+//       <div className="mt-8">{children}</div>
+//     </main>
+//   );
+// }
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 py-10">
-      <header className="flex items-center justify-between">
-        <Logo size="sm" />
-        <Link to="/admin/payouts" className="text-sm text-muted-foreground hover:text-foreground">
-          Payout queue
-        </Link>
-      </header>
-      <div className="mt-8">{children}</div>
-    </main>
+    <AdminShell>
+      <div className="max-w-xl">{children}</div>
+    </AdminShell>
   );
 }
 

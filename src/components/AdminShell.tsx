@@ -19,7 +19,7 @@ const GROUPS: { title: string; links: AdminLink[] }[] = [
       { to: "/admin/analytics", label: "Analytics" },
       { to: "/admin/views", label: "View tracking" },
       { to: "/admin/payouts", label: "Payouts" },
-      { to: "/admin/Learn to earn", label: "Learn to earn" },
+      { to: "/admin/university", label: "Learn to earn" },
     ],
   },
   {

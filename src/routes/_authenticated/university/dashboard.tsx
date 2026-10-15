@@ -9,9 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/_authenticated/university/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Cloutbase University" },
-      { name: "description", content: "Your courses and what to learn next on Cloutbase University." },
-      { property: "og:title", content: "Dashboard — Cloutbase University" },
+      { title: "Dashboard — Learn to earn" },
+      { name: "description", content: "Your courses and what to learn next on Learn to earn." },
+      { property: "og:title", content: "Dashboard — Learn to earn" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -55,7 +55,7 @@ function UniversityDashboard() {
   return (
     <UniversityShell>
       <div className="mt-8">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-2">Cloutbase University</p>
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-2">Learn to earn</p>
         <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight lg:text-3xl">
           Welcome back{username ? `, @${username}` : ""}
         </h1>

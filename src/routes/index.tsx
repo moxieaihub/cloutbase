@@ -592,7 +592,7 @@ function Landing() {
               <span>
                 <Eyebrow>Learn</Eyebrow>
                 <span className="mt-2 block font-display text-2xl font-semibold tracking-[-0.03em] md:text-4xl">
-                  Cloutbase University
+                  Learn to earn
                 </span>
                 <span className="mt-2 block max-w-xl text-[15px] leading-[1.5] text-muted-foreground md:text-lg">
                   Learn how to earn — courses on clipping, streaming and growth.

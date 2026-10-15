@@ -7,15 +7,6 @@ import { EarnUpTo } from "@/components/EarnUpTo";
 import { PaidBadge } from "@/components/PaidBadge";
 import { TermsBox } from "@/components/TermsBox";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ClipperShell } from "@/features/clipper/components/ClipperShell";
 import {
   useApplyForSlot,
@@ -23,7 +14,6 @@ import {
   useMyAccounts,
   useMyApplication,
   useMyCampaignClips,
-  useSubmitClip,
 } from "@/features/clipper/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { formatNaira } from "@/lib/campaign";
@@ -96,10 +86,7 @@ function CampaignBriefPage() {
   const { campaignId } = Route.useParams();
   const { user } = Route.useRouteContext();
 
-  const [clipLink, setClipLink] = useState("");
-  const [accountId, setAccountId] = useState("");
   const [rulesAccepted, setRulesAccepted] = useState(false);
-  const [watermarkConfirmed, setWatermarkConfirmed] = useState(false);
   const [watermarkUrl, setWatermarkUrl] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
@@ -110,11 +97,6 @@ function CampaignBriefPage() {
   const { data: application } = useMyApplication(campaignId, user.id);
 
   const apply = useApplyForSlot(campaignId, user.id);
-  const submit = useSubmitClip(campaignId, user.id, () => {
-    setClipLink("");
-    setAccountId("");
-    setWatermarkConfirmed(false);
-  });
 
   const cloutbaseWatermark = campaign?.cloutbase_watermark_url ?? null;
   useEffect(() => {
@@ -156,9 +138,9 @@ function CampaignBriefPage() {
   const usableAccounts = (myAccounts ?? []).filter(
     (a) => targetPlatforms.length === 0 || targetPlatforms.includes(a.platform),
   );
-  const selectedAccount = usableAccounts.find((a) => a.id === accountId);
+  // "full" = roster full but still running; only ended/expired campaigns are closed.
   const closed =
-    campaign.status !== "live" ||
+    (campaign.status !== "live" && campaign.status !== "full") ||
     (campaign.ends_at ? new Date(campaign.ends_at).getTime() <= Date.now() : false);
   const needsAccountNote =
     usableAccounts.length === 0
@@ -169,13 +151,6 @@ function CampaignBriefPage() {
   const earned = (myClips ?? []).reduce((s, c) => s + Number(c.earnings ?? 0), 0);
   const early = campaign.can_join ? null : earlyAccessCountdown(campaign.early_access_until);
   const isInhouse = Boolean(campaign.is_inhouse);
-
-  const canSubmit =
-    !closed &&
-    !submit.isPending &&
-    Boolean(selectedAccount) &&
-    clipLink.trim().length > 0 &&
-    (!isInhouse || (watermarkConfirmed && Boolean(campaign.cloutbase_watermark_url)));
 
   const applyLabel = closed
     ? "Campaign closed"
@@ -330,76 +305,23 @@ function CampaignBriefPage() {
                 You hold a slot on this campaign.
               </p>
 
-              <h2 className="mt-8 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                Submit a clip
-              </h2>
-
-              {needsAccountNote ? (
-                <div className="mt-3 rounded-2xl border border-border p-4 text-sm leading-relaxed">
-                  {needsAccountNote}.{" "}
-                  <Link to="/clipper/profile" className="underline underline-offset-4">
-                    Link an account
-                  </Link>
-                </div>
-              ) : (
-                <form
-                  className="mt-3 space-y-3"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (!selectedAccount) return;
-                    submit.mutate({
-                      clipLink,
-                      account: selectedAccount,
-                      allowedPlatforms: targetPlatforms,
-                      isInhouse,
-                      watermarkConfirmed,
-                    });
-                  }}
-                >
-                  <div>
-                    <Label htmlFor="clip">Clip link</Label>
-                    <Input
-                      id="clip"
-                      value={clipLink}
-                      onChange={(e) => setClipLink(e.target.value)}
-                      placeholder="https://tiktok.com/@you/video/…"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="account">Posted from</Label>
-                    <Select value={accountId} onValueChange={setAccountId}>
-                      <SelectTrigger id="account" className="mt-1">
-                        <SelectValue placeholder="Pick the account you posted on" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {usableAccounts.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {platformLabel(a.platform)} · @{a.handle}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {isInhouse ? (
-                    <label className="flex items-start gap-2 rounded-xl border border-border p-3 text-xs leading-relaxed">
-                      <input
-                        type="checkbox"
-                        checked={watermarkConfirmed}
-                        onChange={(e) => setWatermarkConfirmed(e.target.checked)}
-                        className="mt-0.5"
-                      />
-                      <span>
-                        The Cloutbase watermark is on this clip, bottom-right, visible the whole way
-                        through. Admin verifies it — a clip without it earns nothing.
-                      </span>
-                    </label>
-                  ) : null}
-                  <Button type="submit" className="w-full" disabled={!canSubmit}>
-                    {closed ? "Campaign closed" : submit.isPending ? "Submitting…" : "Submit clip"}
+              <div className="mt-6 rounded-2xl border border-border p-5">
+                <h2 className="text-sm font-medium">Posted your clip?</h2>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  Submit the link to your live post so it can start counting.
+                </p>
+                {closed ? (
+                  <Button className="mt-4 w-full" disabled>
+                    Campaign closed
                   </Button>
-                </form>
-              )}
+                ) : (
+                  <Button asChild className="mt-4 w-full">
+                    <Link to="/clipper/submit/$campaignId" params={{ campaignId }}>
+                      Submit a clip
+                    </Link>
+                  </Button>
+                )}
+              </div>
 
               <div className="mt-6 rounded-2xl border border-border p-5">
                 <p className="text-sm text-muted-foreground">Earned on this campaign</p>

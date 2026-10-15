@@ -25,7 +25,7 @@ const TYPES = {
   },
   student: {
     label: "Student",
-    heading: "Create your University account",
+    heading: "Create your Learn to earn account",
     blurb: "Learn how to earn with practical, Naira-priced courses.",
   },
 } as const;

@@ -55,7 +55,7 @@ export const Route = createFileRoute("/signup/$type")({
       label === "business"
         ? "Create a Cloutbase business account and get your videos clipped by Nigerian creators."
         : label === "student"
-          ? "Create a Cloutbase University account and learn how to earn with practical courses."
+          ? "Create a Cloutbase student account and learn how to earn with practical courses."
           : "Create a Cloutbase clipper account and start earning in Naira from clips.";
     return {
       meta: [

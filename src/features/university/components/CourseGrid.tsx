@@ -8,9 +8,9 @@ export function CourseGrid({
   owned?: Set<string> | undefined;
 }) {
   return (
-    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-      {courses.map((c) => (
-        <CoursePoster key={c.id} course={c} owned={owned?.has(c.id) ?? false} />
+    <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+      {courses.map((c, i) => (
+        <CoursePoster key={c.id} course={c} owned={owned?.has(c.id) ?? false} index={i} />
       ))}
     </div>
   );

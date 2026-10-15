@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { BankDetailsForm } from "@/features/clipper/components/BankDetailsForm";
 import { ClipperShell } from "@/features/clipper/components/ClipperShell";
+import { KycSection } from "@/features/clipper/components/KycSection";
 import { LinkedAccounts } from "@/features/clipper/components/LinkedAccounts";
 import { ReferralBlock } from "@/features/clipper/components/ReferralBlock";
 
@@ -29,6 +30,7 @@ function ClipperProfile() {
         <div className="space-y-10">
           <LinkedAccounts userId={user.id} />
           <BankDetailsForm userId={user.id} />
+          <KycSection userId={user.id} />
         </div>
         <div className="mt-10 space-y-6 lg:mt-0">
           <ReferralBlock />

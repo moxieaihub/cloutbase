@@ -29,7 +29,7 @@ const GROUPS: { title: string; links: AdminLink[] }[] = [
     links: [
       { to: "/admin/clippers", label: "Clippers" },
       { to: "/admin/users", label: "Admin access" },
-      { to: "/admin/users", label: "Admin access" },
+      { to: "/admin/kyc", label: "KYC review" },
       { to: "/admin/bans", label: "Bans & strikes" },
     ],
   },

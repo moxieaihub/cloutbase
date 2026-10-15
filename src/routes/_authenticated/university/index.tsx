@@ -7,13 +7,13 @@ import { useOwnedCourseIds, usePublishedCourses } from "@/features/university/qu
 export const Route = createFileRoute("/_authenticated/university/")({
   head: () => ({
     meta: [
-      { title: "Cloutbase University — learn how to earn" },
+      { title: "Learn to earn — Cloutbase" },
       {
         name: "description",
         content:
           "Short, practical Naira-priced courses on clipping, streaming, content and community — buy once, keep forever.",
       },
-      { property: "og:title", content: "Cloutbase University — learn how to earn" },
+      { property: "og:title", content: "Learn to earn — Cloutbase" },
       {
         property: "og:description",
         content: "Practical courses on clipping, streaming and growing an audience in Nigeria.",
@@ -71,7 +71,7 @@ function Catalog() {
   return (
     <Shell>
       <div className="mt-8">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-2">Cloutbase University</p>
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-2">Learn to earn</p>
         <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
           Learn how to earn
         </h1>

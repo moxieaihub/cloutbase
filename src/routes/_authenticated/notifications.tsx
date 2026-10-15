@@ -1,14 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { AdminShell } from "@/components/AdminShell";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { BrandShell } from "@/features/brand/components/BrandShell";
 import { ClipperShell } from "@/features/clipper/components/ClipperShell";
+import { unreadKey } from "@/features/notifications/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp } from "@/lib/views";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
+  validateSearch: (s: Record<string, unknown>): { from?: "admin" | undefined } => ({
+    from: s["from"] === "admin" ? "admin" : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Notifications — Cloutbase" },
@@ -56,8 +61,9 @@ function Shell({ children }: { children: React.ReactNode }) {
 function Notifications() {
   const { user } = Route.useRouteContext();
   const queryClient = useQueryClient();
+  const { from } = Route.useSearch();
 
-  // Clippers and brands get their own sidebar + header; anyone else gets the plain layout.
+  // Clippers, brands and admins get their own sidebar + header; anyone else gets the plain layout.
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile", user.id],
     queryFn: async () => {
@@ -94,7 +100,26 @@ function Notifications() {
         .eq("read", false);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications", user.id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", user.id] });
+      queryClient.invalidateQueries({ queryKey: unreadKey });
+    },
+  });
+
+  // Clicking a single notification marks just that one as read.
+  const markOne = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("id", id)
+        .eq("user_id", user.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", user.id] });
+      queryClient.invalidateQueries({ queryKey: unreadKey });
+    },
   });
 
   const unread = (items ?? []).filter((n) => !n.read).length;
@@ -108,11 +133,13 @@ function Notifications() {
   }
 
   const Wrapper =
-    profile?.account_type === "clipper"
-      ? ClipperShell
-      : profile?.account_type === "business"
-        ? BrandShell
-        : Shell;
+    from === "admin"
+      ? AdminShell
+      : profile?.account_type === "clipper"
+        ? ClipperShell
+        : profile?.account_type === "business"
+          ? BrandShell
+          : Shell;
 
   return (
     <Wrapper>
@@ -134,14 +161,24 @@ function Notifications() {
       ) : (
         <ul className="mt-6 space-y-2">
           {(items ?? []).map((n) => (
-            <li
-              key={n.id}
-              className={`rounded-xl border p-3 text-sm ${n.read ? "border-border text-muted-foreground" : "border-foreground"}`}
-            >
-              <p>{n.message}</p>
-              <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
-                {n.type} · {formatTimestamp(n.created_at)}
-              </p>
+            <li key={n.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!n.read) markOne.mutate(n.id);
+                }}
+                className={`w-full rounded-xl border p-3 text-left text-sm transition-colors hover:bg-card ${n.read ? "border-border text-muted-foreground" : "border-foreground font-medium"}`}
+              >
+                <span className="flex items-start gap-2">
+                  {n.read ? null : (
+                    <span aria-label="Unread" className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-500" />
+                  )}
+                  <span>{n.message}</span>
+                </span>
+                <span className="mt-1 block text-xs font-normal uppercase tracking-wide text-muted-foreground">
+                  {n.type} · {formatTimestamp(n.created_at)}
+                </span>
+              </button>
             </li>
           ))}
         </ul>

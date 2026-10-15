@@ -146,7 +146,7 @@ export function AboutPage({ eyebrow, title, intro, points, steps, ctaLabel, cta 
               For clippers
             </Link>
             <Link to="/university" className={footerLink}>
-              University
+              Learn to earn
             </Link>
           </nav>
           <p>© {new Date().getFullYear()} Cloutbase</p>

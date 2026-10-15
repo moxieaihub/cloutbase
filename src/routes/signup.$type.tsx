@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Logo } from "@/components/Logo";
 import { TermsBox } from "@/components/TermsBox";
 import { supabase } from "@/integrations/supabase/client";
+import { useRedirectIfSignedIn } from "@/lib/useRedirectIfSignedIn";
 import {
   BUSINESS_TERMS,
   CLIPPER_TERMS,
@@ -78,6 +79,9 @@ function SignupPage() {
   const router = useRouter();
   const { redirect } = Route.useSearch();
 
+  // Signed-in visitors skip this page and go to their own dashboard.
+  const status = useRedirectIfSignedIn(redirect);
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -138,6 +142,9 @@ function SignupPage() {
 
     setSent(true);
   }
+
+  // Still checking whether you're already signed in — show nothing instead of flashing the form.
+  if (status === "checking") return <main className="min-h-screen" />;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col justify-center px-5 py-12 md:max-w-[480px] lg:max-w-5xl lg:px-12">

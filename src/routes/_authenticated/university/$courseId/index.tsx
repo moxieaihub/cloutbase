@@ -11,9 +11,13 @@ import { useCourseCheckout } from "@/features/university/useCourseCheckout";
 
 type Search = { ref?: string | undefined };
 
+const pick = (search: Record<string, unknown>, key: string) =>
+  typeof search[key] === "string" ? (search[key] as string) : undefined;
+
 export const Route = createFileRoute("/_authenticated/university/$courseId/")({
+  // Paystack returns the buyer with ?reference=…&trxref=… (not ?ref=). Accept all three.
   validateSearch: (search: Record<string, unknown>): Search => ({
-    ref: typeof search["ref"] === "string" ? (search["ref"] as string) : undefined,
+    ref: pick(search, "reference") ?? pick(search, "trxref") ?? pick(search, "ref"),
   }),
   head: () => ({
     meta: [
@@ -57,7 +61,7 @@ function CourseDetail() {
   const checkout = useCourseCheckout(courseId, user.id);
   const confirmReturn = checkout.confirm;
 
-  // Paystack sends the buyer back with ?ref= — confirm it, then clean the URL.
+  // Paystack sends the buyer back with a reference — confirm it, then clean the URL.
   useEffect(() => {
     if (!ref || owns !== false) return;
     let cancelled = false;

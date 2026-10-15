@@ -12,9 +12,13 @@ import { confirmCampaignFunding, initCampaignFunding } from "@/lib/campaign-fund
 
 type Search = { ref?: string | undefined };
 
+const pick = (s: Record<string, unknown>, key: string) =>
+  typeof s[key] === "string" ? (s[key] as string) : undefined;
+
 export const Route = createFileRoute("/_authenticated/business/pay/$campaignId")({
+  // Paystack returns the brand with ?reference=…&trxref=… (not ?ref=). Accept all three.
   validateSearch: (s: Record<string, unknown>): Search => ({
-    ref: typeof s["ref"] === "string" ? (s["ref"] as string) : undefined,
+    ref: pick(s, "reference") ?? pick(s, "trxref") ?? pick(s, "ref"),
   }),
   head: () => ({
     meta: [
@@ -47,7 +51,7 @@ function Escrow() {
     queryClient.invalidateQueries({ queryKey: brandKeys.campaigns });
   }
 
-  // Paystack sends the brand back with ?ref= — verify it on the server.
+  // Paystack sends the brand back with a reference — verify it on the server.
   useEffect(() => {
     if (!ref || !campaign || campaign.funded) return;
     let cancelled = false;

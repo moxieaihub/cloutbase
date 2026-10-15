@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import { BrandShell } from "@/features/brand/components/BrandShell";
+import { ClipperShell } from "@/features/clipper/components/ClipperShell";
 import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp } from "@/lib/views";
 
@@ -55,6 +57,20 @@ function Notifications() {
   const { user } = Route.useRouteContext();
   const queryClient = useQueryClient();
 
+  // Clippers and brands get their own sidebar + header; anyone else gets the plain layout.
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ["profile", user.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username, account_type")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: items, isLoading } = useQuery({
     queryKey: ["notifications", user.id],
     queryFn: async () => {
@@ -83,8 +99,23 @@ function Notifications() {
 
   const unread = (items ?? []).filter((n) => !n.read).length;
 
+  if (profileLoading) {
+    return (
+      <Shell>
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </Shell>
+    );
+  }
+
+  const Wrapper =
+    profile?.account_type === "clipper"
+      ? ClipperShell
+      : profile?.account_type === "business"
+        ? BrandShell
+        : Shell;
+
   return (
-    <Shell>
+    <Wrapper>
       <h1 className="text-xl font-semibold tracking-tight">Notifications</h1>
       <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
         New campaign alerts (Official Clippers first), 72-hour slot warnings and payout alerts.
@@ -115,6 +146,6 @@ function Notifications() {
           ))}
         </ul>
       )}
-    </Shell>
+    </Wrapper>
   );
 }

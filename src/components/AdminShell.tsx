@@ -1,7 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { CountBadge } from "@/components/CountBadge";
 import { Logo } from "@/components/Logo";
+import { useUnreadNotifications } from "@/features/notifications/queries";
 import { supabase } from "@/integrations/supabase/client";
 
 type AdminLink = { to: string; label: string; exact?: boolean };
@@ -41,16 +43,17 @@ const GROUPS: { title: string; links: AdminLink[] }[] = [
 ];
 
 const base =
-  "flex items-center rounded-xl px-4 py-2.5 text-[14px] text-muted-foreground transition-colors hover:bg-card hover:text-foreground";
+  "flex items-center justify-between rounded-xl px-4 py-2.5 text-[14px] text-muted-foreground transition-colors hover:bg-card hover:text-foreground";
 const active = "bg-card font-semibold text-foreground";
 
 const pill =
-  "shrink-0 rounded-full border border-input px-4 py-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground";
+  "flex shrink-0 items-center gap-1.5 rounded-full border border-input px-4 py-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground";
 const pillActive = "border-foreground/40 bg-card font-semibold text-foreground";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: unread = 0 } = useUnreadNotifications();
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -73,12 +76,24 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </span>
           </div>
 
-          <nav className="flex items-center gap-1 text-[14px]" aria-label="Main">
+          <nav className="flex items-center gap-2 text-[14px]" aria-label="Main">
             <Link
               to="/dashboard"
               className="hidden rounded-full px-3.5 py-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground md:inline-flex"
             >
               Exit admin
+            </Link>
+            <Link
+              to="/notifications"
+              search={{ from: "admin" }}
+              aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-input text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+              </svg>
+              <CountBadge count={unread} className="absolute -right-1 -top-1" />
             </Link>
             <button
               onClick={signOut}
@@ -119,6 +134,21 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 ))}
               </div>
             ))}
+
+            <div className="flex flex-col gap-1">
+              <p className="px-4 pb-1 pt-4 text-[10px] uppercase tracking-widest text-muted-2">
+                Account
+              </p>
+              <Link
+                to="/notifications"
+                search={{ from: "admin" }}
+                className={base}
+                activeProps={{ className: active }}
+              >
+                Notifications
+                <CountBadge count={unread} />
+              </Link>
+            </div>
           </nav>
         </aside>
 
@@ -139,6 +169,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 {l.label}
               </Link>
             ))}
+            <Link
+              to="/notifications"
+              search={{ from: "admin" }}
+              className={pill}
+              activeProps={{ className: pillActive }}
+            >
+              Notifications
+              <CountBadge count={unread} />
+            </Link>
           </nav>
 
           {children}

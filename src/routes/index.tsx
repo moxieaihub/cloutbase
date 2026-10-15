@@ -147,7 +147,7 @@ function NavLinks({ className, onNavigate }: { className: string; onNavigate?: (
         For clippers
       </Link>
       <Link to="/university" className={className} onClick={onNavigate}>
-        University
+        Learn to earn
       </Link>
     </>
   );
@@ -306,7 +306,7 @@ function SiteFooter() {
               </li>
               <li>
                 <Link to="/university" className={item}>
-                  University
+                  Learn to earn
                 </Link>
               </li>
             </ul>

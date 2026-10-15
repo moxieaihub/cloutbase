@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/admin/university/$courseId
         content: "Edit course details, upload the cover and workbook, and manage lessons.",
       },
       { property: "og:title", content: "Edit course — Cloutbase admin" },
-      { property: "og:description", content: "Course editor for Cloutbase University." },
+      { property: "og:description", content: "Course editor for Learn to earn." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

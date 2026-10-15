@@ -17,16 +17,16 @@ export const Route = createFileRoute("/_authenticated/university/$courseId/")({
   }),
   head: () => ({
     meta: [
-      { title: "Course — Cloutbase University" },
+      { title: "Course — Learn to earn" },
       {
         name: "description",
         content:
-          "Course lessons, workbook and what you will be able to do by the end — inside Cloutbase University.",
+          "Course lessons, workbook and what you will be able to do by the end — inside Learn to earn.",
       },
-      { property: "og:title", content: "Course — Cloutbase University" },
+      { property: "og:title", content: "Course — Learn to earn" },
       {
         property: "og:description",
-        content: "Lessons, workbook and outcomes for this Cloutbase University course.",
+        content: "Lessons, workbook and outcomes for this Learn to earn course.",
       },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary_large_image" },
